@@ -8,14 +8,11 @@ and `snap/PROOF.bend`.
 
 ## Install
 
-Install Bend, then import the library from a program in this tree:
+Use with [Bend](https://github.com/bendlang/bend) or install easily with [ez](https://github.com/Emerging-Patterns/ez):
 
 ```
-curl -fsSL https://bend-lang.com/install.sh | sh
-```
-
-```
-import ./snap/main.bend as Snap
+ez init
+ez add Emerging-Patterns/snap
 ```
 
 ## Usage
