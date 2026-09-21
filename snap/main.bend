@@ -1,4 +1,4 @@
-# snap: process spawn / run-a-program for Bend 2. `run` (and `exec`) run a
+# snap: program runner for Bend 2. `run` (and `exec`) run a
 # program with argv as a list of strings. `start` leaves one running and
 # answers its pid. `par` runs several at once. The wire is newline-joined
 # argv, execvp with no shell, and an answer whose first line is the exit

@@ -1,5 +1,5 @@
 {
-  description = "snap: process spawn / run-a-program for Bend 2";
+  description = "snap: program runner for Bend 2";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.bend = {

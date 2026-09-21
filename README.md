@@ -1,11 +1,10 @@
 # snap
 
-Process spawn / run-a-program for [Bend 2](https://github.com/bendlang/bend).
-`run` (and `exec`) take argv as a list of strings, never a shell string, and
-answer the exit status plus stdout and stderr. `start` leaves a program
-running and answers its pid. `par` runs several programs at once. Helpers
-`cmd`/`line`, `code`, `text`, and `ok` join argv and read an answer back.
-`snap/LAWS.bend` states the helpers; `snap/PROOF.bend` proves those laws.
+Program runner for [Bend 2](https://github.com/bendlang/bend). Pass argv as a
+list of strings — no shell — and get back exit status, stdout, and stderr.
+`start` returns a pid without waiting; `par` runs several jobs together.
+Helpers join argv and read answers. Laws and proofs live in `snap/LAWS.bend`
+and `snap/PROOF.bend`.
 
 ## Install
 
