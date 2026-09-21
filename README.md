@@ -40,5 +40,3 @@ cd snap
 bend examples/demo/main.bend -o bin/demo.bin
 bin/demo.bin
 ```
-
-`nix build` builds the same fixture to `result/bin/demo`.
