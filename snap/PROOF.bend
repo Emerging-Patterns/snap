@@ -41,6 +41,9 @@ def Laws.plan_one(_u):
 def Laws.code_is_first(_out):
   {==}
 
+def Laws.code_none(_u):
+  {==}
+
 def Laws.code_empty(_u):
   {==}
 

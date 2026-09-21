@@ -76,10 +76,15 @@ law code_is_first:
   for out: String
   {Snap.code(out) == Snap.code.of(String.lines(out)) : String}
 
-# LAW: a missing answer is a program that could not be started
+# LAW: no lines is a program that could not be started
+law code_none:
+  for u: Unit
+  {Snap.code.of([]) == "127" : String}
+
+# LAW: an empty string is one empty line, so the status is empty
 law code_empty:
   for u: Unit
-  {Snap.code("") == "127" : String}
+  {Snap.code("") == "" : String}
 
 # LAW: the status is the first line
 law code_status:
