@@ -1,0 +1,96 @@
+{
+  "nodes": {
+    "bend": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789938444,
+        "narHash": "sha256-MIE+QrAua6B/B4qaEP9B+PCWhsLi6+0buTeP+CkjVsw=",
+        "owner": "bendlang",
+        "repo": "bend",
+        "rev": "94ee9ba40043643df648b13fc5638b065a37cb4e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "bendlang",
+        "repo": "bend",
+        "type": "github"
+      }
+    },
+    "bolt": {
+      "inputs": {
+        "bend": [
+          "bend"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789944418,
+        "narHash": "sha256-ByR8UDGFAfn5HgVa8muRz5IA1DzoOxpOESB9TNezmus=",
+        "owner": "Emerging-Patterns",
+        "repo": "bolt",
+        "rev": "24b497e294a08f6a83e0b08ece3795f813421b87",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Emerging-Patterns",
+        "repo": "bolt",
+        "type": "github"
+      }
+    },
+    "ez": {
+      "inputs": {
+        "bend": [
+          "bend"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789945343,
+        "narHash": "sha256-n8E7T3LO1kWQD7aIAmovRO3+q78GrFjo16EKPW1sXWo=",
+        "owner": "Emerging-Patterns",
+        "repo": "ez",
+        "rev": "2560296f04161ebf39f91484039d2fd98fea986d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Emerging-Patterns",
+        "repo": "ez",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1789546076,
+        "narHash": "sha256-zVxLZiSnmaaPLwnhj7pwmqe3axBg/C6nG5JZsJMh2g4=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "b1b875982b17dabde9b4a37f3e229e74913e6db3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "bend": "bend",
+        "bolt": "bolt",
+        "ez": "ez",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
