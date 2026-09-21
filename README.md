@@ -8,14 +8,12 @@ and `snap/PROOF.bend`.
 
 ## Install
 
-Install easily with [ez](https://github.com/Emerging-Patterns/ez):
+Use with [Bend](https://github.com/bendlang/bend) or install easily with [ez](https://github.com/Emerging-Patterns/ez):
 
 ```
 ez init
 ez add Emerging-Patterns/snap
 ```
-
-Use with [Bend](https://github.com/bendlang/bend).
 
 ## Usage
 
