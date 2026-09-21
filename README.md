@@ -24,7 +24,7 @@ import ./snap/main.bend as Snap
 stderr together. `Snap.code` reads the status; `Snap.text` reads the body.
 
 ```
-import ./snap/main.bend as Snap
+import 0x9bfd9d57916f3439316c2775fd1f10b4/main.bend as Snap
 
 def main() -> IO(Unit):
   do IO<Unit>:
