@@ -1,7 +1,7 @@
 // snaprun.exec: runs a program with its arguments and answers the exit status on
 // its own first line, then everything the program printed.
 //
-// The arguments arrive in one string, NUL separated (`wire` in main.bend), and
+// The arguments arrive in one string, NUL separated (`wire` in src/argv.bend), and
 // are handed to execvp as a vector. No shell sees them. The child gets /dev/null for stdin
 // and one pipe for stdout and stderr, so it cannot touch this program's own
 // stdio.

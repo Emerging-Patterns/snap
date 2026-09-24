@@ -27,17 +27,17 @@ Untagged quantified laws are allowed. They pass the proof gate like any law, but
 
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
-| SNAP-ARGV-1 | For every argv that `accepts`, `wire.split(wire(argv))` is exactly argv: the effects receive every argument whole, whatever characters other than NUL it holds. | Proved | proved | snap/LAWS.bend wire_round_trip |
-| SNAP-ARGV-2 | `run.plan(argv)` is `Refused{}` exactly when argv is empty, its first element is empty, or an element holds NUL. A refused `run` or `exec` answers `127\n` and a refused `start` answers `0`, whatever effect they were given, so neither calls one. | Proved | proved | snap/LAWS.bend refuses_empty; snap/LAWS.bend refuses_no_program; snap/LAWS.bend refuses_nul; snap/LAWS.bend runs_accepted; snap/LAWS.bend refused_run_calls_nothing; snap/LAWS.bend refused_start_calls_nothing |
+| SNAP-ARGV-1 | For every argv that `accepts`, `wire.split(wire(argv))` is exactly argv: the effects receive every argument whole, whatever characters other than NUL it holds. | Proved | proved | LAWS.bend wire_round_trip |
+| SNAP-ARGV-2 | `run.plan(argv)` is `Refused{}` exactly when argv is empty, its first element is empty, or an element holds NUL. A refused `run` or `exec` answers `127\n` and a refused `start` answers `0`, whatever effect they were given, so neither calls one. | Proved | proved | LAWS.bend refuses_empty; LAWS.bend refuses_no_program; LAWS.bend refuses_nul; LAWS.bend runs_accepted; LAWS.bend refused_run_calls_nothing; LAWS.bend refused_start_calls_nothing |
 | SNAP-ARGV-3 | Each effect executes the argv it splits from its wire directly, with no shell, resolving the program on `PATH`. | Trusted | | |
 
 ### Answers (SNAP-ANS)
 
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
-| SNAP-ANS-1 | For every status `s` holding no newline and every body `b`, `code(s ++ "\n" ++ b)` is `s`. | Proved | proved | snap/LAWS.bend code_reads_status |
-| SNAP-ANS-2 | For every status `s` holding no newline and every body `b`, `text(s ++ "\n" ++ b)` is `b`. | Proved | proved | snap/LAWS.bend text_reads_body |
-| SNAP-ANS-3 | For every status `s` holding no newline and every body `b`, `ok(s ++ "\n" ++ b)` is true exactly when `s` is `"0"`. | Proved | proved | snap/LAWS.bend ok_reads_zero |
+| SNAP-ANS-1 | For every status `s` holding no newline and every body `b`, `code(s ++ "\n" ++ b)` is `s`. | Proved | proved | LAWS.bend code_reads_status |
+| SNAP-ANS-2 | For every status `s` holding no newline and every body `b`, `text(s ++ "\n" ++ b)` is `b`. | Proved | proved | LAWS.bend text_reads_body |
+| SNAP-ANS-3 | For every status `s` holding no newline and every body `b`, `ok(s ++ "\n" ++ b)` is true exactly when `s` is `"0"`. | Proved | proved | LAWS.bend ok_reads_zero |
 | SNAP-ANS-4 | On both lanes, `snaprun.exec` answers one line holding the program's exit status, or 128 plus the signal that ended it, or 127 when it could not be started, then every byte the program wrote to stdout and stderr, in the order written; the program's stdin is empty. | Trusted | | |
 
 ### Start (SNAP-START)
@@ -50,8 +50,8 @@ Untagged quantified laws are allowed. They pass the proof gate like any law, but
 
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
-| SNAP-PAR-1 | For every job list and every header whose fields hold no NUL, `plan.split(par.plan(js, width, gb, at, by))` is exactly the header and one job per job of `js`, in order, each the job's argv when it `accepts` and the empty job otherwise. | Proved | proved | snap/LAWS.bend par_plan_round_trip |
-| SNAP-PAR-2 | For every list of statuses and every list of bodies, `par.answers` has exactly one answer per status, and the answer at position `n` reads back status `n` and body `n`, or the empty body when there is no body `n`; and the statuses the effect answers, one to a line, each holding a char and no newline, are read back exactly. | Proved | proved | snap/LAWS.bend par_answers_codes; snap/LAWS.bend par_answers_texts; snap/LAWS.bend par_statuses_read_back |
+| SNAP-PAR-1 | For every job list and every header whose fields hold no NUL, `plan.split(par.plan(js, width, gb, at, by))` is exactly the header and one job per job of `js`, in order, each the job's argv when it `accepts` and the empty job otherwise. | Proved | proved | LAWS.bend par_plan_round_trip |
+| SNAP-PAR-2 | For every list of statuses and every list of bodies, `par.answers` has exactly one answer per status, and the answer at position `n` reads back status `n` and body `n`, or the empty body when there is no body `n`; and the statuses the effect answers, one to a line, each holding a char and no newline, are read back exactly. | Proved | proved | LAWS.bend par_answers_codes; LAWS.bend par_answers_texts; LAWS.bend par_statuses_read_back |
 | SNAP-PAR-3 | On both lanes, `snaprun.par` answers exactly one status per job of its wire, in order, each as `snaprun.exec` would for that job; 127 for the empty job; 124 for a job skipped because the deadline had passed or ended by it; and it writes each job's output to `at/n` and truncates `at/n` for every job it does not run. | Trusted | | |
 | SNAP-PAR-4 | `snaprun.par` runs at most `width` jobs at once; an empty or zero width is the online cores, reduced to what the spare memory holds at `gb` each, and at least 1. | Trusted | | |
 
@@ -65,7 +65,7 @@ No requirement is pending, and every Trusted row holds as written on both lanes,
 | :---- | :---- | :---- |
 | SNAP-TRUST-1 | The Bend checker is sound. | It cannot be checked from inside Bend; this is EZ-TRUST-1. snap pins bend 2.0.27 through the flake. |
 | SNAP-TRUST-2 | The proof gate runner runs bend on every PROOF.bend and accepts only an exact `All terms check.` first line. | It is ez's `mkProofs` in the `proofs` flake check, and a shell loop in the `readme` CI job. |
-| SNAP-TRUST-3 | Each effect, C and JS, reads every wire the planners make exactly as `wire.split` and `plan.split` in snap/LAWS.bend do. | Foreign code; it is the effects' faithfulness to the planner, and each split is a few lines reviewed line by line. |
+| SNAP-TRUST-3 | Each effect, C and JS, reads every wire the planners make exactly as `wire.split` and `plan.split` in LAWS.bend do. | Foreign code; it is the effects' faithfulness to the planner, and each split is a few lines reviewed line by line. |
 | SNAP-TRUST-4 | Every commit on `main` passed `ci.yml`. | Holds only once a maintainer adds the ruleset in REVIEW-10. Today it does not hold. |
 | SNAP-ARGV-3 | Each effect executes its argv with no shell. | Foreign code calling `execvp` and node's `child_process`. |
 | SNAP-ANS-4 | `snaprun.exec`'s answer shape. | Foreign code and the kernel's report of how a child ended. |

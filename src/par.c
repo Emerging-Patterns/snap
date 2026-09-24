@@ -1,7 +1,7 @@
 // snaprun.par: several programs run at once, each answered with its exit status.
 //
 // The arguments arrive as one string of fields with a NUL after each but the
-// last (`par.plan` in main.bend): how many may run at once, how many gigabytes
+// last (`par.plan` in src/par.bend): how many may run at once, how many gigabytes
 // each was given, the directory they write into, the deadline, and then each
 // job as its arguments, each with a `+` in front, and an empty field that ends
 // it. A marked argument is never empty, so the empty field cannot be mistaken

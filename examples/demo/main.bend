@@ -1,6 +1,6 @@
 # examples/demo: a fixture that runs programs through snap
 import Base
-import ../../snap/main.bend as Snap
+import ../../main.bend as Snap
 
 # one run as `label code=... text=...`
 def show(+label: String, +out: String) -> IO(Unit):  # noqa: L001 demo output

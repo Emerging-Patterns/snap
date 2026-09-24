@@ -2,7 +2,10 @@
 # law that proves a SPEC.md requirement carries its ID (see SPEC.md).
 import Base
 import ./main.bend as Snap
-import ../check/LAWS.bend as Str
+import ./src/argv.bend as Argv
+import ./src/par.bend as Par
+import ./src/file.bend as File
+import ./check/LAWS.bend as Str
 
 # Reading an answer. An answer is a status on its own first line, then the
 # body; the status holds no newline, and the body may hold anything.
@@ -45,21 +48,21 @@ def wire.split(wr: String) -> List<&2, String>:
 # SNAP-ARGV-1
 law wire_round_trip:
   for +argv: List<&2, String>
-  for h: {Snap.accepts(argv) == True{} : Bool}
-  {wire.split(Snap.wire(argv)) == argv : List<&2, String>}
+  for h: {Argv.accepts(argv) == True{} : Bool}
+  {wire.split(Argv.wire(argv)) == argv : List<&2, String>}
 
 # LAW: an empty argv names no program, so it is refused
 # SNAP-ARGV-2
 law refuses_empty:
   for +argv: List<&2, String>
   for h: {List.is_empty(&2, String, argv) == True{} : Bool}
-  {Snap.run.plan(argv) == Snap.Refused{} : Snap.Step}
+  {Argv.run.plan(argv) == Argv.Refused{} : Argv.Step}
 
 # LAW: an empty program name is refused, whatever arguments follow it
 # SNAP-ARGV-2
 law refuses_no_program:
   for +args: List<&2, String>
-  {Snap.run.plan("" <> args) == Snap.Refused{} : Snap.Step}
+  {Argv.run.plan("" <> args) == Argv.Refused{} : Argv.Step}
 
 # LAW: an argv with NUL in any one of its elements is refused, wherever that
 # element sits
@@ -69,8 +72,8 @@ law refuses_nul:
   for +x: String
   for +post: List<&2, String>
   for h: {Str.clear(x, '\0') == False{} : Bool}
-  {Snap.run.plan(List.append(&2, String, pre, x <> post)) == Snap.Refused{}
-    : Snap.Step}
+  {Argv.run.plan(List.append(&2, String, pre, x <> post)) == Argv.Refused{}
+    : Argv.Step}
 
 # LAW: and every other argv is run, with its wire: a program name that is not
 # empty, and no element holding NUL
@@ -80,7 +83,7 @@ law runs_accepted:
   for +args: List<&2, String>
   for hp: {String.is_empty(prog) == False{} : Bool}
   for ha: {Str.clear.all(prog <> args, '\0') == True{} : Bool}
-  {Snap.run.plan(prog <> args) == Snap.Run{Snap.wire(prog <> args)} : Snap.Step}
+  {Argv.run.plan(prog <> args) == Argv.Run{Argv.wire(prog <> args)} : Argv.Step}
 
 # LAW: a refused `run` answers as a program that could not be started, and
 # calls no effect: the answer is the same whatever effect it was given
@@ -88,8 +91,8 @@ law runs_accepted:
 law refused_run_calls_nothing:
   for eff: String -> IO(String)
   for +argv: List<&2, String>
-  for h: {Snap.run.plan(argv) == Snap.Refused{} : Snap.Step}
-  {Snap.run.with(eff, Snap.run.plan(argv)) == IO.pure(String, "127\n") : IO(String)}
+  for h: {Argv.run.plan(argv) == Argv.Refused{} : Argv.Step}
+  {Argv.run.with(eff, Argv.run.plan(argv)) == IO.pure(String, "127\n") : IO(String)}
 
 # LAW: a refused `start` answers 0, and calls no effect: the answer is the
 # same whatever effect it was given
@@ -97,8 +100,8 @@ law refused_run_calls_nothing:
 law refused_start_calls_nothing:
   for eff: String -> IO(String)
   for +argv: List<&2, String>
-  for h: {Snap.run.plan(argv) == Snap.Refused{} : Snap.Step}
-  {Snap.start.with(eff, Snap.run.plan(argv)) == IO.pure(String, "0") : IO(String)}
+  for h: {Argv.run.plan(argv) == Argv.Refused{} : Argv.Step}
+  {Argv.start.with(eff, Argv.run.plan(argv)) == IO.pure(String, "0") : IO(String)}
 
 # Running several at once. `par` decides in `par.plan` which jobs it sends
 # and how they are framed, and in `par.answers` how each status is paired
@@ -147,7 +150,7 @@ def jobs.sent(js: List<&2, List<&2, String>>) -> List<&2, List<&2, String>>:
     case []:
       []
     case job <> rest:
-      Snap.par.job(job) <> jobs.sent(rest)
+      Par.par.job(job) <> jobs.sent(rest)
 
 # LAW: the effect reads back exactly the header and one job per job given, in
 # order: each job as it was when `run` would accept it, and the empty job,
@@ -160,7 +163,7 @@ law par_plan_round_trip:
   for +at: String
   for +by: String
   for h: {Str.clear.all([width, gb, at, by], '\0') == True{} : Bool}
-  {plan.split(Snap.par.plan(js, width, gb, at, by))
+  {plan.split(Par.par.plan(js, width, gb, at, by))
     == Split{[width, gb, at, by], jobs.sent(js)} : Split}
 
 # the status each answer reads back
@@ -188,7 +191,7 @@ def bodies.owed(cs: List<&2, String>, bodies: List<&2, Maybe<&2, String>>) -> Li
     case Con{_code, ct} Nil{}:
       "" <> bodies.owed(ct, [])
     case Con{_code, ct} Con{body, bt}:
-      Snap.file.text_of(body) <> bodies.owed(ct, bt)
+      File.file.text_of(body) <> bodies.owed(ct, bt)
 
 # whether every string of a list has a char in it
 def filled.all(ss: List<&2, String>) -> Bool:
@@ -205,7 +208,7 @@ law par_answers_codes:
   for +cs: List<&2, String>
   for bodies: List<&2, Maybe<&2, String>>
   for h: {Str.clear.all(cs, '\n') == True{} : Bool}
-  {codes(Snap.par.answers(cs, bodies)) == cs : List<&2, String>}
+  {codes(Par.par.answers(cs, bodies)) == cs : List<&2, String>}
 
 # LAW: and the body at its own place in the order, or nothing when there is
 # none there
@@ -214,7 +217,7 @@ law par_answers_texts:
   for +cs: List<&2, String>
   for +bodies: List<&2, Maybe<&2, String>>
   for h: {Str.clear.all(cs, '\n') == True{} : Bool}
-  {texts(Snap.par.answers(cs, bodies)) == bodies.owed(cs, bodies) : List<&2, String>}
+  {texts(Par.par.answers(cs, bodies)) == bodies.owed(cs, bodies) : List<&2, String>}
 
 # LAW: the statuses the effect answers, one to a line, are read back exactly
 # SNAP-PAR-2
@@ -222,7 +225,7 @@ law par_statuses_read_back:
   for +cs: List<&2, String>
   for h: {Str.clear.all(cs, '\n') == True{} : Bool}
   for hf: {filled.all(cs) == True{} : Bool}
-  {Snap.par.nonblank(String.lines(String.join(cs, "\n"))) == cs : List<&2, String>}
+  {Par.par.nonblank(String.lines(String.join(cs, "\n"))) == cs : List<&2, String>}
 
 # LAW: `cmd`, the wire ez's `pass` effect reads, is cut back into its
 # arguments at its newlines when none holds one. Untagged: this is ez's
