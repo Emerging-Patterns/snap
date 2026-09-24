@@ -41,11 +41,24 @@ function snaprun_par(cmd) {
       codes.push(args.length === 0 ? 127 : 124);
       continue;
     }
-    const out = fs.openSync(dir + "/" + n, "w");
+    // a job that cannot have its own file answers 127, as par.c's child
+    // does when its open fails
+    let out;
+    try {
+      out = fs.openSync(dir + "/" + n, "w");
+    } catch (e) {
+      codes.push(127);
+      continue;
+    }
     try {
       const r = cp.spawnSync(args[0], args.slice(1),
         { stdio: ["ignore", out, out], timeout: by > 0 ? spare * 1000 : undefined });
-      codes.push(r.error !== undefined && r.error !== null ? 127 : r.status === null ? 124 : r.status);
+      // the deadline is a timeout here and an alarm in par.c; either way the
+      // job it ended answers 124, and any other signal 128 plus its number
+      codes.push(r.error !== undefined && r.error !== null
+        ? (r.error.code === "ETIMEDOUT" ? 124 : 127)
+        : r.status !== null ? r.status
+        : 128 + (require("os").constants.signals[r.signal] || 0));
     } catch (e) {
       codes.push(127);
     }

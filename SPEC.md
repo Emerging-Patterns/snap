@@ -57,7 +57,7 @@ Untagged quantified laws are allowed. They pass the proof gate like any law, but
 
 ## Left to prove
 
-No requirement is pending. The Trusted row SNAP-ANS-4 does not yet hold as written on the JS lane, which reports a signal as 128, reads at most 1 MB of output, and puts stderr after stdout; the decided change REVIEW-4 in [docs/rfc/snap-spec.md](docs/rfc/snap-spec.md) makes it hold, and SNAP-PAR-3 with it for the JS lane's deadline status and a missing directory.
+No requirement is pending, and every Trusted row holds as written on both lanes, as far as the checks against `main` recorded in [docs/rfc/snap-law-inventory.md](docs/rfc/snap-law-inventory.md) go: those are what the effects were run on, and they are evidence for a review, not proof.
 
 ## Trust boundary
 
