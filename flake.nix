@@ -15,6 +15,7 @@
     url = "github:Emerging-Patterns/bolt";
     inputs.nixpkgs.follows = "nixpkgs";
     inputs.bend.follows = "bend";
+    inputs.ez.follows = "ez";
   };
 
   outputs = { self, nixpkgs, ... }@inputs:

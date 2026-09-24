@@ -161,3 +161,12 @@ Places a failed or missing read becomes a default: a file that cannot be opened 
 - The README's build step `bend examples/demo/main.bend -o bin/demo.bin` fails on a fresh clone, because `bin/` is ignored and does not exist (`/usr/bin/ld: cannot open output file`), and bend exits 1. Confirmed. This is the same bug ez's README had.
 - The flake pins a bolt from before v0.4.0, so the lint gate in CI checks rules two major versions out of date and cannot run `trace`. Confirmed.
 - `main` has no branch protection (`protected: false` from the GitHub API on 2026-09-24; rulesets not checked), so the gate binds nothing.
+
+## Rollout progress
+
+| Phase | Item | State | What landed |
+| :---- | :---- | :---- | :---- |
+| Preliminary | REVIEW-9, README build | done | `mkdir -p bin` in the README; a `readme` CI job follows it without nix, then runs the proof gate by its first line |
+| Preliminary | REVIEW-8, bolt bump | done | bolt pinned at v1.7.0 (`38da7d9`), following snap's ez; S002, S003 and S004 fixed; `# noqa: L001` on `run`, `exec`, `start`, `par` and the demo's IO defs; the demo's `nth` replaced by an IO walk with the same output; bolt v1.7.0 says `clean` with every group at error |
+| Preliminary | REVIEW-10, ruleset on `main` | waiting on a maintainer | a repository setting, applied by hand |
+| One | SPEC.md, the 28 laws deleted, `trace` at warn | next | |

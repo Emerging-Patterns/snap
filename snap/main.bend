@@ -36,11 +36,11 @@ def line(argv: List<&2, String>) -> String:
   cmd(argv)
 
 # a program run with its arguments
-def run(argv: List<&2, String>) -> IO(String):
+def run(argv: List<&2, String>) -> IO(String):  # noqa: L001 IO entry point
   snaprun.exec(cmd(argv))
 
 # a program run with its arguments; the same as `run`
-def exec(argv: List<&2, String>) -> IO(String):
+def exec(argv: List<&2, String>) -> IO(String):  # noqa: L001 IO entry point
   run(argv)
 
 # one job as the effect wants it: how many arguments, then each of them. The
@@ -61,12 +61,11 @@ def plan.go(js: List<&2, List<&2, String>>) -> String:
 # what the effect is handed: how many may run at once, how many gigabytes each
 # was given, where they write, the second they must all be finished by, and
 # then every job
-def plan(js: List<&2, List<&2, String>>, +width: String, +gb: String,
-  +at: String, +by: String) -> String:
+def plan(js: List<&2, List<&2, String>>, +width: String, +gb: String, +at: String, +by: String) -> String:
   String.join([width, gb, at, by], "\n") ++ plan.go(js)
 
 # a program started with its arguments and left running; the answer is its pid
-def start(argv: List<&2, String>) -> IO(String):
+def start(argv: List<&2, String>) -> IO(String):  # noqa: L001 IO entry point
   snaprun.start(cmd(argv))
 
 # the handle closed, and whatever was gathered
@@ -76,8 +75,7 @@ def file.slurp.end(file: File, acc: String) -> IO(String):
     return acc
 
 # an empty chunk means the end of the file
-def file.slurp.cut(chunk: String, file: File, acc: String,
-  rest: File -> String -> IO(String)) -> IO(String):
+def file.slurp.cut(chunk: String, file: File, acc: String, rest: File -> String -> IO(String)) -> IO(String):
   match chunk:
     case SNil{}:
       file.slurp.end(file, acc)
@@ -85,19 +83,26 @@ def file.slurp.cut(chunk: String, file: File, acc: String,
       rest(file, acc ++ SCon{c, t})
 
 # a failed read ends the file as surely as an empty one
-def file.slurp.more(r: Result<&1, &1, U32 & String, String>, file: File,
-  acc: String, rest: File -> String -> IO(String)) -> IO(String):
-  match r:
+def file.slurp.more(
+  res: Result<&1, &1, U32 & String, String>,
+  file: File,
+  acc: String,
+  rest: File -> String -> IO(String)
+) -> IO(String):
+  match res:
     case Fail{_e}:
       file.slurp.end(file, acc)
     case Done{chunk}:
       file.slurp.cut(chunk, file, acc, rest)
 
 # the handle comes back paired with what it read
-def file.slurp.next(got: File & Result<&1, &1, U32 & String, String>,
-  acc: String, rest: File -> String -> IO(String)) -> IO(String):
-  (file, r) = got
-  file.slurp.more(r, file, acc, rest)
+def file.slurp.next(
+  got: File & Result<&1, &1, U32 & String, String>,
+  acc: String,
+  rest: File -> String -> IO(String)
+) -> IO(String):
+  (file, res) = got
+  file.slurp.more(res, file, acc, rest)
 
 # the whole file, read in chunks until one is empty, or the fuel is
 def file.slurp(fuel: Nat, file: File, acc: String) -> IO(String):
@@ -110,9 +115,8 @@ def file.slurp(fuel: Nat, file: File, acc: String) -> IO(String):
         file.slurp.next(got, acc, fl => a => file.slurp(f, fl, a))
 
 # what an opened file holds, or nothing when it would not open
-def file.read.opened(r: Result<&1, &1, U32 & String, File>) ->
-  IO(Maybe<&2, String>):
-  match r:
+def file.read.opened(res: Result<&1, &1, U32 & String, File>) -> IO(Maybe<&2, String>):
+  match res:
     case Fail{_e}:
       IO.pure(Maybe<&2, String>, None{})
     case Done{file}:
@@ -123,12 +127,12 @@ def file.read.opened(r: Result<&1, &1, U32 & String, File>) ->
 # a file's text, or None when it cannot be opened
 def file.read(path: String) -> IO(Maybe<&2, String>):
   do IO<Maybe<&2, String>>:
-    r : Result<&1, &1, U32 & String, File> <- File.open(path, "r")
-    file.read.opened(r)
+    res : Result<&1, &1, U32 & String, File> <- File.open(path, "r")
+    file.read.opened(res)
 
 # a file's text, or "" when there is none
-def file.text_of(m: Maybe<&2, String>) -> String:
-  match m:
+def file.text_of(got: Maybe<&2, String>) -> String:
+  match got:
     case None{}:
       ""
     case Some{s}:
@@ -147,18 +151,18 @@ def par.nonblank(ss: List<&2, String>) -> List<&2, String>:
 # one job's answer, in the shape `run` gives: the status on its own first
 # line, then everything the program printed, read back out of the file it was
 # pointed at
-def par.of(+code: String, m: Maybe<&2, String>) -> String:
-  code ++ "\n" ++ file.text_of(m)
+def par.of(+code: String, got: Maybe<&2, String>) -> String:
+  code ++ "\n" ++ file.text_of(got)
 
 # every job's answer, paired with the file it wrote by its place in the order
-def par.read(cs: List<&2, String>, +at: String, +i: Nat) -> IO(List<&2, String>):
+def par.read(cs: List<&2, String>, +at: String, +nn: Nat) -> IO(List<&2, String>):
   match cs:
     case Nil{}:
       IO.pure(List<&2, String>, Nil{})
     case Con{+h, t}:
       do IO<List<&2, String>>:
-        src : Maybe<&2, String> <- file.read(at ++ "/" ++ Nat.show(i))
-        +more : List<&2, String> <- par.read(t, at, (1n + i : Nat))
+        src : Maybe<&2, String> <- file.read(at ++ "/" ++ Nat.show(nn))
+        +more : List<&2, String> <- par.read(t, at, (1n + nn : Nat))
         return par.of(h, src) <> more
 
 # several programs run at once, each answered exactly as `run` answers one, in
@@ -166,8 +170,13 @@ def par.read(cs: List<&2, String>, +at: String, +i: Nat) -> IO(List<&2, String>)
 # fills: job n writes to `at/n`. A width of "" leaves the count to the effect,
 # which reads the cores and divides them by `gb`, the memory cap each job runs
 # under. `by` is the second every job must be finished by, or "0" for none.
-def par(js: List<&2, List<&2, String>>, +width: String, +gb: String,
-  +at: String, +by: String) -> IO(List<&2, String>):
+def par(  # noqa: L001 IO entry point
+  js: List<&2, List<&2, String>>,
+  +width: String,
+  +gb: String,
+  +at: String,
+  +by: String
+) -> IO(List<&2, String>):
   do IO<List<&2, String>>:
     +out : String <- snaprun.par(plan(js, width, gb, at, by))
     par.read(par.nonblank(String.lines(out)), at, 0n)
