@@ -7,11 +7,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790169676,
-        "narHash": "sha256-yhFhBVssGjTAYYfc9y5EbMj7HVTPo4NQkEjxewWv7p8=",
+        "lastModified": 1790200275,
+        "narHash": "sha256-huYLnKbMUukFhFLypIXx/wLVU3EmgsUEe9l67mU6CDw=",
         "owner": "bendlang",
         "repo": "bend",
-        "rev": "6a77e1246c351055cb15031267a7c76c87036cbc",
+        "rev": "d37909174ebd664338ae3194799a9e0899dedd51",
         "type": "github"
       },
       "original": {
