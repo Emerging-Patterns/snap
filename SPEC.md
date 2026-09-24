@@ -2,7 +2,7 @@
 
 This is the list of every behavior snap guarantees, each under a stable requirement ID. Every requirement has one of two levels. A **Proved** requirement holds for every input, and is backed by a quantified law in a LAWS.bend that passes the proof gate. A **Trusted** requirement is an assumption about something snap cannot check from inside its own gate, most of all the three foreign effects that start programs, and it is listed in the trust boundary below. A Proved requirement whose law has not landed yet has status **pending**: we intend to prove it, and until then it is not guaranteed. The proof gate is this check: for every PROOF.bend in the tree, the first line `bend PROOF.bend` prints is exactly `All terms check.` CI runs it in the `proofs` flake check and in the `readme` job.
 
-The reasoning behind each requirement, and the decisions that shaped them, are in [docs/rfc/snap-spec.md](docs/rfc/snap-spec.md). What snap proved before this list existed, and what we found, is in [docs/rfc/snap-law-inventory.md](docs/rfc/snap-law-inventory.md).
+The reasoning behind each requirement, and the decisions that shaped them, are in [docs/rfc/snap-spec.md](docs/rfc/snap-spec.md). What snap proved before this list existed, and what we found, is in that RFC's "Audit record".
 
 ## Tagging
 
@@ -57,7 +57,7 @@ Untagged quantified laws are allowed. They pass the proof gate like any law, but
 
 ## Left to prove
 
-No requirement is pending, and every Trusted row holds as written on both lanes, as far as the checks against `main` recorded in [docs/rfc/snap-law-inventory.md](docs/rfc/snap-law-inventory.md) go: those are what the effects were run on, and they are evidence for a review, not proof.
+No requirement is pending, and every Trusted row holds as written on both lanes, as far as the checks recorded in the RFC's "Audit record" go: those are what the effects were run on, and they are evidence for a review, not proof.
 
 ## Trust boundary
 

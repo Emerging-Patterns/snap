@@ -4,9 +4,9 @@ Read at `be520aa` on `main` ("chore: bump Bend to 2.0.27 (#12)"), bend 2.0.27, p
 
 ## Draft Status
 
-**State:** Accepted. The maintainer accepted every recommendation below on 2026-09-24, and each item is resolved in place. REVIEW-10 is a repository setting a maintainer applies by hand; it is resolved as a decision and stays outstanding as an action until the ruleset exists.
+**State:** Accepted, and rolled out. The maintainer accepted every recommendation below on 2026-09-24, and each item is resolved in place. Every Proved row in SPEC.md is proved, and `trace` runs at error. REVIEW-10 is a repository setting a maintainer applies by hand; it is resolved as a decision and stays outstanding as an action until the ruleset exists.
 
-This draft was written from the code at `be520aa`, from the evidence in [snap-law-inventory.md](snap-law-inventory.md), and from the positions reached by the specifications of ez ([ez-spec.md](https://github.com/Emerging-Patterns/ez/blob/master/docs/rfc/ez-spec.md)) and bolt ([bolt-spec.md](https://github.com/Emerging-Patterns/bolt/blob/main/docs/rfc/bolt-spec.md)), both of which depend on snap. Every verdict below was checked against the code, and most were confirmed by running a binary built from this tree on both of Bend's lanes. The items below are decisions this draft makes and asks a maintainer to confirm. Each one also appears inline where the decision lives. The first two come first because the rest depend on them.
+This draft was written from the code at `be520aa`, from the evidence in the law inventory (`docs/rfc/snap-law-inventory.md`, folded into "Audit record" below when the rollout finished and deleted; read it whole at `cf1faba`), and from the positions reached by the specifications of ez ([ez-spec.md](https://github.com/Emerging-Patterns/ez/blob/master/docs/rfc/ez-spec.md)) and bolt ([bolt-spec.md](https://github.com/Emerging-Patterns/bolt/blob/main/docs/rfc/bolt-spec.md)), both of which depend on snap. Every verdict below was checked against the code, and most were confirmed by running a binary built from this tree on both of Bend's lanes. The items below are decisions this draft makes and asks a maintainer to confirm. Each one also appears inline where the decision lives. The first two come first because the rest depend on them.
 
 **Items for review:**
 
@@ -244,3 +244,87 @@ REVIEW-4 lands whenever it is ready, since it changes only Trusted rows.
 
 - ez's `pass` effect splits `cmd` on newlines and has the same bug as SNAP-ARGV-1. Once snap's `wire` lands, ez can hand `pass` the NUL wire, or snap can offer `pass` itself.
 - A `par` that answers each job with its own identity rather than its position would let SNAP-PAR-2 drop its dependence on the effect answering in order.
+
+## Audit record
+
+The law inventory was the progress tracker for this RFC. When the rollout finished it was folded into this section and deleted; the full document, with the per-law table and the verdict table, is `docs/rfc/snap-law-inventory.md` at `cf1faba`.
+
+### What snap proved before
+
+At `be520aa` snap had 28 laws. Every one of the 28 proofs is `{==}`. The 18 `U` laws each pin one call on one input. The 10 `Q` laws each restate the body of the def they name: `cmd` is `String.join(argv, "\n")`, `code` is `code.of(String.lines(out))`, and so on. None of them states a property of snap that a refactor could break without also changing the line the law copies.
+
+What snap proves today: nothing about running a program. The laws show that the pure helpers compute what their bodies say. They say nothing about whether the program receives the arguments it was given, whether `code` and `text` read back what the effect wrote, or whether `par` answers once per job, and we found each of those broken for some input (below). The three effects, where everything that matters happens, are foreign C and JS code that no law reaches and no SPEC.md names.
+
+### What each call read
+
+This table is as read at `be520aa`. Since the rollout, every decision in it that Bend can make is made in `run.plan`, `par.plan` and `par.answers`, and the reads that remain are the effects' own.
+
+| Call | Input | Where | Decision it feeds |
+| :---- | :---- | :---- | :---- |
+| `run`, `exec` | argv, through the wire | `exec.c:13-32`, `exec.js:5` | what is executed |
+| | `PATH` | `execvp`, `spawnSync` | which file is executed |
+| | the child's exit status or signal | `exec.c:62-64`, `exec.js:7` | the status line |
+| | the child's stdout and stderr | `exec.c:52-59`, `exec.js:8` | the body |
+| `start` | argv, `PATH` | `start.c:13-44`, `start.js:7-9` | what is started |
+| | the fork's result | `start.c:33`, `start.js:11` | the pid answered |
+| `par` | the header fields and jobs, through the wire | `par.c:94-143`, `par.js:11-23` | what runs, how many at once, where output goes, the deadline |
+| | the clock | `par.c:158`, `par.js:24` | whether a job is skipped, and its alarm |
+| | `/proc/meminfo`, `sysinfo`, online cores | `par.c:46-80` | the width when none is given |
+| | each child's status | `par.c:193-215` | the job's status |
+| | the files `at/0` … `at/n-1` | `main.bend:154-162` | each job's body, including files this run did not write |
+
+Places a failed or missing read becomes a default: a file that cannot be opened becomes an empty body (`file.read`, `main.bend:124`); a read error partway through a file ends it silently with what was read (`file.slurp.more`, `main.bend:88-94`); the slurp stops silently after 100000 chunks of 64 KiB (`main.bend:120`); `atoi` turns a malformed count into 0, which ends the job walk (`par.c:125`).
+
+### Findings
+
+Each finding is marked "Confirmed" (run on the named lane) or "by reading". Every bug below is fixed by the rollout, and the rollout record says where.
+
+#### Behavior the code guarantees that no requirement mentions
+
+- `code`, `text` and `ok` are total and read any string, not only an effect's answer. By reading.
+- `text(s ++ "\n" ++ b)` is `b` for every `b`, including one with trailing newlines, because `String.split` and `String.join` on the same separator are inverse. This is the reader's real guarantee and has no law. By reading.
+- `cmd` is also a wire format a downstream project depends on: ez's `ez/pass.bend` hands `R.cmd(argv)` to its own `pass.c`, which splits on newlines. Changing what `cmd` returns changes ez's `ez run`. By reading ez at `df6d616`.
+- The package's hub name changes with any byte of its seven files, so every change below reaches ez and bolt only when they bump their pin.
+
+#### Behavior that looks accidental
+
+- `code.of([])` answers `"127"`, but `code` never passes it `[]`; `code("")` is `""`. The `code_none` law pins an arm nothing reaches. By reading `String.split` in bend 2.0.27's `base.bend`.
+- `line` and `exec` are aliases of `cmd` and `run`. By reading.
+- Native's `run` interleaves stdout and stderr in write order; JS appends stderr after stdout. Confirmed.
+- `par` on the JS lane runs its jobs one at a time. Documented in `par.js`. By reading.
+- Invalid UTF-8 in a program's output reaches Bend as U+FFFD on both lanes. Confirmed.
+- On `main`, native also split an argument at a NUL (`["printf", "[%s]", "a\0b"]` printed `[a][b]`), since the split walked the whole buffer for terminators; JS threw `ERR_INVALID_ARG_VALUE`. Confirmed while checking phase three against `main`; `accepts` now refuses such an argv.
+- On `main`, native `run` dropped an empty last argument: `["sh", "-c", "echo $#", "sh", "a", ""]` printed 1 natively and 2 on JS, because the split never recorded a field after the final separator. Confirmed; fixed in phase four for all three C effects.
+- The children of `run` inherit every descriptor the parent holds open that is not close-on-exec. By reading `exec.c`.
+
+#### Requirements with no corresponding code
+
+- Nothing refuses an argv that cannot be passed intact (an argument holding `\n` or NUL, or no program name). The wire silently changes it.
+- Nothing ties a `par` answer to its job other than position, and nothing checks that the count of answers equals the count of jobs.
+
+#### Bugs
+
+- An argument holding `\n` is split into two arguments by `run`, `exec`, `start` and `par`. Confirmed.
+- `par` drops an empty job and every job after it, and an argument holding `\n` drops every later job. Confirmed.
+- `par` answers a skipped job with a previous run's output. Confirmed.
+- The JS lane crashes the whole program on `run([])`, `run([""])`, and on `par` when `at` does not exist. Confirmed.
+- The JS lane reports a killed program as 128 (native: 128 plus the signal), a `par` job ended by its deadline as 127 (native: 124), and a successful program that printed over 1 MB as 127. Confirmed.
+- `start` on native answers a pid for a program that could not be started. Confirmed.
+- On the JS lane, `code` and `text` overflow the interpreter's stack on an answer with a line of about 100 KB, because both walk the whole answer through `String.lines` even though `code` needs only the first line. Confirmed.
+- The README's build step `bend examples/demo/main.bend -o bin/demo.bin` fails on a fresh clone, because `bin/` is ignored and does not exist (`/usr/bin/ld: cannot open output file`), and bend exits 1. Confirmed. This is the same bug ez's README had.
+- The flake pins a bolt from before v0.4.0, so the lint gate in CI checks rules two major versions out of date and cannot run `trace`. Confirmed.
+- `main` has no branch protection (`protected: false` from the GitHub API on 2026-09-24; rulesets not checked), so the gate binds nothing.
+
+### Rollout record
+
+| Phase | Item | State | What landed |
+| :---- | :---- | :---- | :---- |
+| Preliminary | REVIEW-9, README build | done | `mkdir -p bin` in the README; a `readme` CI job follows it without nix, then runs the proof gate by its first line |
+| Preliminary | REVIEW-8, bolt bump | done | bolt pinned at v1.7.0 (`38da7d9`), following snap's ez; S002, S003 and S004 fixed; `# noqa: L001` on `run`, `exec`, `start`, `par` and the demo's IO defs; the demo's `nth` replaced by an IO walk with the same output; bolt v1.7.0 says `clean` with every group at error |
+| Preliminary | REVIEW-10, ruleset on `main` | waiting on a maintainer | a repository setting, applied by hand |
+| One | SPEC.md, the 28 laws deleted, `trace` at warn | done | SPEC.md with 7 Proved rows pending and 5 Trusted; all 28 laws and their proofs deleted, leaving `snap/LAWS.bend` and `PROOF.bend` as headers so the IO entry points stay under law; `laws` at warn for `coverage`, `closed` and `unsafe` at error, `trace` at warn. bolt: 0 errors, 7 coverage warnings on `cmd`, `line`, `job`, `plan`, `code`, `text`, `ok`. `trace` checked by planting a tag for an unknown ID (reported) and for a pending row (accepted) |
+| Two | SNAP-ANS-1 to 3 | done | `code_reads_status`, `text_reads_body`, `ok_reads_zero` (direct laws, all tagged) over `code`, `text` and `ok` unchanged; the string lemmas they rest on (`split_front`, `split_sep`, `join_split`, `append_nil`, and `char_eq_true` beneath them) copied from ez into `check/LAWS.bend` and `check/PROOF.bend`, 37 laws, untagged. Each proof fails when replaced by `{==}`, and each of four planted bugs (`code` trims the answer, `code` reads the body, `text` joins without newlines, `ok` tests for `"1"`) fails in its own law's proof. Coverage warnings: 4 (`cmd`, `line`, `job`, `plan`) |
+| Two | REVIEW-7, `code` and `text` without `String.lines` | done | `code` reads up to the first newline and `text` returns what follows it as it stands, each through a helper that takes the recursive call as a thunk; `code.of` and `text.of`, with the dead `"127"` arm, are gone. Merged on the gate: the three tagged statements are unchanged, only the proofs were rewritten (induction on the status). Old and new readers agree on 11 edge inputs on both lanes; the JS lane now reads a 100 KB answer (it overflowed before) |
+| Three | REVIEW-2, REVIEW-3, REVIEW-5; SNAP-ARGV-1 and 2 | done | The spike first: a NUL-joined wire carried a newline inside an argument, an empty argument and non-ASCII text through `io_cstr` and `split("\0")` whole on both lanes. Then `wire`, `accepts`, `free_of`, the `Step` plan and `run.plan`; `run`, `exec` and `start` perform the plan through `run.with` and `start.with`, which take the effect as a parameter so the frame laws can say a refused plan answers the same whatever the effect; `exec` and `start` effects split on NUL; native `start` reads a close-on-exec pipe and answers 0 when exec fails. Laws: `wire_round_trip` (SNAP-ARGV-1); `refuses_empty`, `refuses_no_program`, `refuses_nul`, `runs_accepted`, `refused_run_calls_nothing`, `refused_start_calls_nothing` (SNAP-ARGV-2, the last two frame laws). `split_join` added to `check/` from ez. Every new proof fails as `{==}`; five planted bugs each fail the gate, and `isolate_mutant.py` shows `refuses_nul` and `refuses_no_program` each catch their bug with the earlier laws set aside. Against `main`'s snap on both lanes: a newline in an argument now arrives whole (was split), NUL in an argument is refused with 127 (native split it in two, JS crashed), `start` of a missing program answers 0 on native (was a pid); empty argv, an empty program name, a missing program and `echo` answer as before |
+| Four | `par`: REVIEW-6, SNAP-PAR-1 and 2; `trace` and `laws` at error | done | The `par` wire is NUL-separated fields: the header, then each job's arguments marked with `+` and an empty field that ends the job, so no count has to be parsed and a refused job is the empty job in its own place. `par.plan` builds it; `par.answers` pairs statuses with bodies purely, and `par.bodies` only reads the files. The C and JS effects read the new fields, answer 127 for the empty job, and empty the file of every job they do not run. A field after the last NUL is now read in all three C effects: the old loop dropped an empty last field, so `run(["printf", "%s", ""])` lost its empty argument. Laws: `par_plan_round_trip` (SNAP-PAR-1, through the law-side model `plan.split`); `par_answers_codes`, `par_answers_texts`, `par_statuses_read_back` (SNAP-PAR-2); `cmd_round_trip` and `line_round_trip`, untagged, for ez's `pass` wire. Every new proof fails as `{==}`; six planted bugs each fail the gate, and `isolate_mutant.py` shows the order and body bugs caught by their own laws. Against `main` on both lanes: an empty job no longer drops the jobs after it; a newline in an argument arrives whole (JS dropped the next job; native aborted the program with `munmap_chunk(): invalid pointer`); a skipped job's body is empty, not a previous run's. Every Proved row is proved; bolt says `clean` with every rule at error, `trace` included, and removing one tag fails it |
+| After | REVIEW-4, the JS lane's statuses | done | `exec.js` points stdout and stderr at one temporary file, as `exec.c` points them at one pipe, so output arrives in write order and without spawnSync's 1 MB cap, and maps a signal to 128 plus its number; `par.js` answers 124 for a job its deadline ended, 128 plus the signal for any other signal, and 127 per job when `at` does not exist. On the branch both lanes now answer the same for: `kill -9` (137), stderr and stdout interleaved, 1.1 MB of output (status 0, all bytes), a missing program (127), `exit 3`, `par` with a killed job (137) and a missing directory (127), and `par`'s deadline (124 for the job it ended and the one it skipped). SNAP-ANS-4 and SNAP-PAR-3 now hold as written on both lanes, by these checks |
