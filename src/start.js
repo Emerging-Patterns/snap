@@ -1,10 +1,10 @@
-// snaprun.start: the JS lane's twin of start.c. The arguments arrive newline
+// snaprun.start: the JS lane's twin of start.c. The arguments arrive NUL
 // separated and go straight to spawn, so no shell parses them. The child is
 // detached and its streams are dropped, so this process can exit while it runs
 // and nothing it prints can be mistaken for an answer.
 function snaprun_start(cmd) {
   const cp = require("child_process");
-  const args = cmd.split("\n");
+  const args = cmd.split("\0");
   try {
     const child = cp.spawn(args[0], args.slice(1), { detached: true, stdio: "ignore" });
     child.unref();

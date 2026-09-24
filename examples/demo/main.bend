@@ -1,32 +1,26 @@
 # examples/demo: a fixture that runs programs through snap
 import Base
-import ../../snap/main.bend as Snap
+import ../../main.bend as Snap
 
 # one run as `label code=... text=...`
-def show(+label: String, +out: String) -> IO(Unit):
+def show(+label: String, +out: String) -> IO(Unit):  # noqa: L001 demo output
   IO.print(label ++ " code=" ++ Snap.code(out) ++ " text=" ++ Snap.text(out))
 
-# the nth answer, or ""
-def nth(rs: List<&2, String>, n: Nat) -> String:
-  match rs n:
-    case Nil{} _m:
-      ""
-    case Con{h, _t} 0n:
-      h
-    case Con{_h, t} 1n+p:
-      nth(t, p)
-
-# two batch answers labeled
-def show.par(+rs: List<&2, String>) -> IO(Unit):
-  do IO<Unit>:
-    show("par0", nth(rs, 0n))
-    show("par1", nth(rs, 1n))
+# every batch answer, labeled `par<n>` by its place in the order
+def show.par(rs: List<&2, String>, +nn: Nat) -> IO(Unit):
+  match rs:
+    case Nil{}:
+      IO.pure(Unit, Unit{})
+    case Con{+h, t}:
+      do IO<Unit>:
+        show("par" ++ Nat.show(nn), h)
+        show.par(t, (1n + nn : Nat))
 
 # the directory text, without its trailing newline
 def dir.of(+out: String) -> String:
   String.trim(Snap.text(out))
 
-def main() -> IO(Unit):
+def main() -> IO(Unit):  # noqa: L001 demo entry point
   do IO<Unit>:
     +hi : String <- Snap.run(["echo", "hello"])
     show("run", hi)
@@ -38,4 +32,4 @@ def main() -> IO(Unit):
     +at : String <- IO.pure(String, dir.of(tmp))
     +rs : List<&2, String> <- Snap.par([["echo", "a"], ["echo", "b"]], "2", "1",
       at, "0")
-    show.par(rs)
+    show.par(rs, 0n)

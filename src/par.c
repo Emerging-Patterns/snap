@@ -1,11 +1,17 @@
 // snaprun.par: several programs run at once, each answered with its exit status.
 //
-// The arguments arrive as one string, every field on its own line: how many
-// may run at once, how many gigabytes each was given, the directory they write
-// into, and then each job as its argument count followed by that many
-// arguments. A count before a job is what lets an argument hold anything a
-// line may hold, so nothing has to invent a separator the way a `\x1e` between
-// records would. No shell sees any of it.
+// The arguments arrive as one string of fields with a NUL after each but the
+// last (`par.plan` in src/par.bend): how many may run at once, how many gigabytes
+// each was given, the directory they write into, the deadline, and then each
+// job as its arguments, each with a `+` in front, and an empty field that ends
+// it. A marked argument is never empty, so the empty field cannot be mistaken
+// for one whatever the arguments hold, and NUL is the one char no argument
+// can hold. The empty job, an empty field alone, is a job `par` refused: it
+// answers 127 and runs nothing. No shell sees any of it.
+//
+// Every job's file is this run's: a job that is not run, because it was
+// refused or the deadline had passed, still has its file emptied, so nothing
+// a run before this one left there is read back as its output.
 //
 // A child's output goes to `<at>/<n>` rather than down a pipe. One pipe a
 // child would mean polling every one of them at once or deadlocking on
@@ -93,18 +99,21 @@ Term snaprun_par_run(Env e, Term* f, IoWork* w) {
   uint64_t n = 0;
   char* cmd = io_cstr(e, f[0], &n);
 
-  // the newlines become terminators, so each field is its own C string
+  // the NULs between fields are already terminators, so each field is its
+  // own C string; count them
   size_t lines = 1;
   for (size_t i = 0; i < (size_t)n; i++) {
-    if (cmd[i] == '\n') {
-      cmd[i] = '\0';
+    if (cmd[i] == '\0') {
       lines++;
     }
   }
   char** line = malloc(lines * sizeof(char*));
   size_t at = 0;
   line[at++] = cmd;
-  for (size_t i = 0; i + 1 < (size_t)n; i++) {
+  // a field starts after every NUL, the last one included: the empty field
+  // that ends the last job is the empty string at the end, which io_cstr
+  // terminates
+  for (size_t i = 0; i < (size_t)n; i++) {
     if (cmd[i] == '\0') {
       line[at++] = cmd + i + 1;
     }
@@ -116,30 +125,28 @@ Term snaprun_par_run(Env e, Term* f, IoWork* w) {
   long by = lines > 3 ? atol(line[3]) : 0;
   int width = want > 0 ? want : snaprun_par_width(cap_gb);
 
-  // the jobs, each a vector into the fields already split
-  // a job says how many arguments it has and they follow it. A count that
-  // ran off the end would walk `line` out of its own allocation, so the walk
-  // stops rather than trusting it.
+  // the jobs, each a vector into the fields already split: the marked fields
+  // up to the empty one that ends the job, each with its mark stepped over
   size_t jobs = 0;
-  for (size_t i = 4; i < at;) {
-    int argc = atoi(line[i]);
-    if (argc <= 0 || i + 1 + (size_t)argc > at) {
-      break;
+  for (size_t i = 4; i < at; i++) {
+    if (line[i][0] == '\0') {
+      jobs++;
     }
-    jobs++;
-    i += (size_t)argc + 1;
   }
   char*** argvs = malloc((jobs ? jobs : 1) * sizeof(char**));
   size_t j = 0;
-  for (size_t i = 4; i < at && j < jobs;) {
-    int argc = atoi(line[i]);
-    char** argv = malloc(((size_t)argc + 1) * sizeof(char*));
-    for (int k = 0; k < argc; k++) {
-      argv[k] = line[i + 1 + (size_t)k];
+  size_t from = 4;
+  for (size_t i = 4; i < at && j < jobs; i++) {
+    if (line[i][0] == '\0') {
+      size_t argc = i - from;
+      char** argv = malloc((argc + 1) * sizeof(char*));
+      for (size_t k = 0; k < argc; k++) {
+        argv[k] = line[from + k] + 1;
+      }
+      argv[argc] = NULL;
+      argvs[j++] = argv;
+      from = i + 1;
     }
-    argv[argc] = NULL;
-    argvs[j++] = argv;
-    i += (size_t)argc + 1;
   }
 
   pid_t* pids = malloc((jobs ? jobs : 1) * sizeof(pid_t));
@@ -156,13 +163,20 @@ Term snaprun_par_run(Env e, Term* f, IoWork* w) {
       // what is left of the run when this job starts, which is not what was
       // left when the one before it did
       long spare = by > 0 ? by - (long)time(NULL) : 0;
-      if (by > 0 && spare <= 0) {
-        codes[next] = 124;
+      char path[4096];
+      snprintf(path, sizeof(path), "%s/%zu", dir, next);
+      // a refused job, and one the deadline has passed, run nothing, and
+      // their files are emptied so no earlier run's output is read as theirs
+      int refused = argvs[next][0] == NULL;
+      if (refused || (by > 0 && spare <= 0)) {
+        int gone = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (gone >= 0) {
+          close(gone);
+        }
+        codes[next] = refused ? 127 : 124;
         next++;
         continue;
       }
-      char path[4096];
-      snprintf(path, sizeof(path), "%s/%zu", dir, next);
       pid_t pid = fork();
       if (pid == 0) {
         // a child that cannot have its own file would otherwise inherit this

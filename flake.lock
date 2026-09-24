@@ -25,16 +25,19 @@
         "bend": [
           "bend"
         ],
+        "ez": [
+          "ez"
+        ],
         "nixpkgs": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1789944418,
-        "narHash": "sha256-ByR8UDGFAfn5HgVa8muRz5IA1DzoOxpOESB9TNezmus=",
+        "lastModified": 1790257846,
+        "narHash": "sha256-XaBdAuxtVDPZO4KzQA0V3s6qK1nwS7dS1gYAoXRVLxM=",
         "owner": "Emerging-Patterns",
         "repo": "bolt",
-        "rev": "24b497e294a08f6a83e0b08ece3795f813421b87",
+        "rev": "38da7d930a9251f44cf7434032e954b2e706564b",
         "type": "github"
       },
       "original": {

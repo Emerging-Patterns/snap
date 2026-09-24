@@ -1,3 +1,3 @@
 [package]
 name = "snap"
-entry = "snap/main.bend"
+entry = "main.bend"
