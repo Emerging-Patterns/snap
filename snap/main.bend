@@ -1,17 +1,20 @@
 # snap: program runner for Bend 2. `run` (and `exec`) run a
 # program with argv as a list of strings. `start` leaves one running and
-# answers its pid. `par` runs several at once. The wire is newline-joined
-# argv, execvp with no shell, and an answer whose first line is the exit
-# status, then stdout and stderr together.
+# answers its pid. `par` runs several at once. `run` and `start` hand their
+# effect argv joined on NUL, which no argument can hold, and refuse an argv
+# that could not arrive whole; the effect execvp's it with no shell. An answer
+# is the exit status on its own first line, then stdout and stderr together.
 import Base
 
-# the program and its arguments, newline separated, run with no shell between.
-# The answer is the exit status on its own first line, then stdout and stderr.
+# the program and its arguments, NUL separated (`wire`), run with no shell
+# between. The answer is the exit status on its own first line, then stdout
+# and stderr.
 def snaprun.exec(cmd: String) -> IO(String):
   import "./exec.c"
   import "./exec.js"
 
-# a program started and left running, answering with its pid. The effect above
+# a program started and left running, answering with its pid, or 0 when it
+# could not be started. The arguments arrive as `wire` makes them. The effect above
 # waits for what it runs and reads it to the end; this one waits for nothing,
 # and gives the child a session and a /dev/null of its own so it holds no pipe
 # open behind it.
@@ -26,18 +29,79 @@ def snaprun.par(cmd: String) -> IO(String):
   import "./par.c"
   import "./par.js"
 
-# the arguments as the effect wants them. Newline separated and execvp'd
-# directly, so no argument is ever read as shell syntax.
+# the arguments joined on newlines. `par`'s wire uses it, and ez's `pass`
+# effect reads it; `run` and `start` use `wire`, since an argument may hold a
+# newline.
 def cmd(argv: List<&2, String>) -> String:
   String.join(argv, "\n")
 
-# the arguments as the effect wants them; the same as `cmd`
+# the arguments joined on newlines; the same as `cmd`
 def line(argv: List<&2, String>) -> String:
   cmd(argv)
 
+# whether a string holds no copy of a char
+def free_of(text: String, +sep: Char) -> Bool:
+  match text:
+    case SNil{}:
+      True{}
+    case SCon{ch, tail}:
+      rest = free_of(tail, sep)
+      Bool.and(Bool.not(Char.is_eq(ch, sep)), rest)
+
+# whether no string of a list holds a copy of a char
+def free_of.all(ps: List<&2, String>, +sep: Char) -> Bool:
+  match ps:
+    case []:
+      True{}
+    case pc <> pt:
+      rest = free_of.all(pt, sep)
+      Bool.and(free_of(pc, sep), rest)
+
+# whether an argv can reach its program whole: it names a program, and no
+# argument holds NUL, which separates them on the wire and which no program
+# could be handed inside an argument anyway
+def accepts(argv: List<&2, String>) -> Bool:
+  match argv:
+    case []:
+      False{}
+    case +prog <> +args:
+      Bool.and(Bool.not(String.is_empty(prog)), free_of.all(prog <> args, '\0'))
+
+# the arguments as the effects want them: joined on NUL, the one char no
+# argument can hold, so each is split back out whole
+def wire(argv: List<&2, String>) -> String:
+  String.join(argv, "\0")
+
+# what a call does with its argv: refuse it, or hand the effect this wire
+type Step is Data:
+  Refused{}
+  Run{wire: String}
+
+# an argv accepted is run; any other is refused
+def run.plan.of(ok: Bool, argv: List<&2, String>) -> Step:
+  match ok:
+    case True{}:
+      Run{wire(argv)}
+    case False{}:
+      Refused{}
+
+# what `run`, `exec` and `start` do with an argv. It decides everything: the
+# effect is called only with the wire of an argv this accepts.
+def run.plan(+argv: List<&2, String>) -> Step:
+  run.plan.of(accepts(argv), argv)
+
+# a step performed by an effect that waits: a refused argv answers as a
+# program that could not be started, and the effect is never called
+def run.with(eff: String -> IO(String), step: Step) -> IO(String):
+  match step:
+    case Refused{}:
+      IO.pure(String, "127\n")
+    case Run{w}:
+      eff(w)
+
 # a program run with its arguments
 def run(argv: List<&2, String>) -> IO(String):  # noqa: L001 IO entry point
-  snaprun.exec(cmd(argv))
+  run.with(snaprun.exec, run.plan(argv))
 
 # a program run with its arguments; the same as `run`
 def exec(argv: List<&2, String>) -> IO(String):  # noqa: L001 IO entry point
@@ -64,9 +128,19 @@ def plan.go(js: List<&2, List<&2, String>>) -> String:
 def plan(js: List<&2, List<&2, String>>, +width: String, +gb: String, +at: String, +by: String) -> String:
   String.join([width, gb, at, by], "\n") ++ plan.go(js)
 
-# a program started with its arguments and left running; the answer is its pid
+# a step performed by an effect that does not wait: a refused argv answers
+# as a program that could not be started, and the effect is never called
+def start.with(eff: String -> IO(String), step: Step) -> IO(String):
+  match step:
+    case Refused{}:
+      IO.pure(String, "0")
+    case Run{w}:
+      eff(w)
+
+# a program started with its arguments and left running; the answer is its
+# pid, or 0 when it could not be started
 def start(argv: List<&2, String>) -> IO(String):  # noqa: L001 IO entry point
-  snaprun.start(cmd(argv))
+  start.with(snaprun.start, run.plan(argv))
 
 # the handle closed, and whatever was gathered
 def file.slurp.end(file: File, acc: String) -> IO(String):

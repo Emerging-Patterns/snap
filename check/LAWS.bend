@@ -274,6 +274,15 @@ def clear(text: String, +sep: Char) -> Bool:
       rest = clear(t, sep)
       Bool.and(Bool.not(Char.is_eq(h, sep)), rest)
 
+# whether no string of a list holds a copy of a char
+def clear.all(ps: List<&2, String>, +sep: Char) -> Bool:
+  match ps:
+    case []:
+      True{}
+    case h <> t:
+      rest = clear.all(t, sep)
+      Bool.and(clear(h, sep), rest)
+
 # LAW: a string that holds no separator, put in front of text, lands whole in
 # front of the text's first piece
 law split_front:
@@ -300,4 +309,26 @@ law split_sep:
   for +c: Char
   for +s: String
   {String.split(SCon{c, s}, c) == SNil{} <> String.split(s, c)
+    : List<&2, String>}
+
+# LAW: pieces joined from a first piece, cut back, when none holds the
+# separator
+law split_join.go:
+  for +ps: List<&2, String>
+  for +p: String
+  for +c: Char
+  for ep: {clear(p, c) == True{} : Bool}
+  for +eps: {clear.all(ps, c) == True{} : Bool}
+  {String.split(String.join.go(ps, p, SCon{c, SNil{}}), c) == p <> ps
+    : List<&2, String>}
+
+# LAW: joining pieces with a separator none of them holds, and cutting the
+# text at it, gives the pieces back. A list with no pieces joins to the empty
+# text, which is one empty piece, so the law is about a list with a first one.
+law split_join:
+  for +p: String
+  for +ps: List<&2, String>
+  for +c: Char
+  for +e: {clear.all(p <> ps, c) == True{} : Bool}
+  {String.split(String.join(p <> ps, SCon{c, SNil{}}), c) == p <> ps
     : List<&2, String>}

@@ -96,7 +96,7 @@ The Bend side gains, as proposed names:
 
 - `wire(argv)`: argv joined on NUL. `wire.split(s)`: the model of how the effects split it, in Bend, used only by laws.
 - `accepts(argv) -> Bool`: argv is not empty, its first element is not empty, and no element holds NUL.
-- `run.plan(argv)`: `Run{wire(argv)}` when accepted, `Refused{}` otherwise. `run` performs the plan; a refusal answers `127\n` without calling the effect. `start` does the same with `0`.
+- `run.plan(argv)`: `Run{wire(argv)}` when accepted, `Refused{}` otherwise. `run` performs the plan; a refusal answers `127\n` without calling the effect. `start` does the same with `0`. As built, `run` is `run.with(snaprun.exec, run.plan(argv))`: the effect is a parameter of the pure `run.with`, so the frame law quantifies over every effect and says a refused plan answers the same whichever one it was given, and no law has to reach the foreign code itself.
 - For `par`, `par.plan` builds the header and the jobs with each refused job replaced by an empty job (count `0`), and `plan.split` models how the effect parses it. The effect answers 127 for an empty job and keeps walking.
 - `par.answers(statuses, bodies)`: the pure assembly `par.read` does today inside IO, so SNAP-PAR-2 can be stated. `par.read` becomes the reads, then one call to it.
 

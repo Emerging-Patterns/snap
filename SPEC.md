@@ -27,8 +27,8 @@ Untagged quantified laws are allowed. They pass the proof gate like any law, but
 
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
-| SNAP-ARGV-1 | For every argv that `accepts`, `wire.split(wire(argv))` is exactly argv: the effects receive every argument whole, whatever characters other than NUL it holds. | Proved | pending | |
-| SNAP-ARGV-2 | `run.plan(argv)` is `Refused{}` exactly when argv is empty, its first element is empty, or an element holds NUL. A refused `run` or `exec` answers `127\n` and a refused `start` answers `0`, and neither calls an effect. | Proved | pending | |
+| SNAP-ARGV-1 | For every argv that `accepts`, `wire.split(wire(argv))` is exactly argv: the effects receive every argument whole, whatever characters other than NUL it holds. | Proved | proved | snap/LAWS.bend wire_round_trip |
+| SNAP-ARGV-2 | `run.plan(argv)` is `Refused{}` exactly when argv is empty, its first element is empty, or an element holds NUL. A refused `run` or `exec` answers `127\n` and a refused `start` answers `0`, whatever effect they were given, so neither calls one. | Proved | proved | snap/LAWS.bend refuses_empty; snap/LAWS.bend refuses_no_program; snap/LAWS.bend refuses_nul; snap/LAWS.bend runs_accepted; snap/LAWS.bend refused_run_calls_nothing; snap/LAWS.bend refused_start_calls_nothing |
 | SNAP-ARGV-3 | Each effect executes the argv it splits from its wire directly, with no shell, resolving the program on `PATH`. | Trusted | | |
 
 ### Answers (SNAP-ANS)
@@ -61,10 +61,9 @@ The rows below are pending. The rollout in [docs/rfc/snap-spec.md](docs/rfc/snap
 
 | ID | What is missing |
 | :---- | :---- |
-| SNAP-ARGV-1, SNAP-ARGV-2 | `wire`, `wire.split`, `accepts` and `run.plan` do not exist yet, and the effects still split on newline (REVIEW-2, REVIEW-3). Phase three. |
 | SNAP-PAR-1, SNAP-PAR-2 | `par.plan`, `plan.split` and `par.answers` do not exist yet, and the effects stop at an empty job (REVIEW-3, REVIEW-6). Phase four. |
 
-The Trusted rows SNAP-ANS-4, SNAP-START-1 and SNAP-PAR-3 do not hold as written today on every lane; the decided behavior changes REVIEW-4, REVIEW-5 and REVIEW-6 make them hold. The inventory lists each divergence.
+The Trusted rows SNAP-ANS-4 and SNAP-PAR-3 do not hold as written today on every lane; the decided behavior changes REVIEW-4 and REVIEW-6 make them hold. SNAP-START-1 holds on both lanes since REVIEW-5. The inventory lists each divergence.
 
 ## Trust boundary
 

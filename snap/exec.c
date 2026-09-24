@@ -1,8 +1,8 @@
 // snaprun.exec: runs a program with its arguments and answers the exit status on
 // its own first line, then everything the program printed.
 //
-// The arguments arrive in one string, newline separated, and are handed to
-// execvp as a vector. No shell sees them. The child gets /dev/null for stdin
+// The arguments arrive in one string, NUL separated (`wire` in main.bend), and
+// are handed to execvp as a vector. No shell sees them. The child gets /dev/null for stdin
 // and one pipe for stdout and stderr, so it cannot touch this program's own
 // stdio.
 #include <fcntl.h>
@@ -13,11 +13,11 @@ Term snaprun_exec_run(Env e, Term* f, IoWork* w) {
   uint64_t n = 0;
   char* cmd = io_cstr(e, f[0], &n);
 
-  // the newlines become terminators, so each argument is its own C string
+  // the NULs between arguments are already terminators, so each argument is
+  // its own C string; count them
   size_t argc = 1;
   for (size_t i = 0; i < (size_t)n; i++) {
-    if (cmd[i] == '\n') {
-      cmd[i] = '\0';
+    if (cmd[i] == '\0') {
       argc++;
     }
   }

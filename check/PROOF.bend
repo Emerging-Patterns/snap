@@ -435,3 +435,36 @@ def Laws.split_sep(c, s):
   Equal.cong(Bool, List<&2, String>,
     b => String.split.fin(c, String.split(s, c), b),
     Char.is_eq(c, c), True{}, Laws.char_eq_self(c))
+
+def Laws.split_join.go(ps, p, c, ep, eps):
+  match ps:
+    case []:
+      Laws.split_one(p, c, ep)
+    case +q <> +qs:
+      Equal.trans(List<&2, String>,
+        String.split(String.append(p,
+          SCon{c, String.join.go(qs, q, SCon{c, SNil{}})}), c),
+        String.append(p, SNil{}) <> q <> qs,
+        p <> q <> qs,
+        Laws.split_front(p, SCon{c, String.join.go(qs, q, SCon{c, SNil{}})}, c,
+          SNil{}, q <> qs, ep,
+          Equal.trans(List<&2, String>,
+            String.split(SCon{c, String.join.go(qs, q, SCon{c, SNil{}})}, c),
+            SNil{} <> String.split(String.join.go(qs, q, SCon{c, SNil{}}), c),
+            SNil{} <> q <> qs,
+            Laws.split_sep(c, String.join.go(qs, q, SCon{c, SNil{}})),
+            Equal.cong(List<&2, String>, List<&2, String>, r => SNil{} <> r,
+              String.split(String.join.go(qs, q, SCon{c, SNil{}}), c),
+              q <> qs,
+              Laws.split_join.go(qs, q, c,
+                Laws.and.left(Laws.clear(q, c), Laws.clear.all(qs, c), eps),
+                Laws.and.right(Laws.clear(q, c), Laws.clear.all(qs, c), eps))))),
+        Equal.cong(String, List<&2, String>, x => x <> q <> qs,
+          String.append(p, SNil{}), p, Laws.append_nil(p)))
+
+# the join starts from the first piece, and the list's hypothesis is
+# the first piece's and the rest's
+def Laws.split_join(p, ps, c, e):
+  Laws.split_join.go(ps, p, c,
+    Laws.and.left(Laws.clear(p, c), Laws.clear.all(ps, c), e),
+    Laws.and.right(Laws.clear(p, c), Laws.clear.all(ps, c), e))
