@@ -181,29 +181,42 @@ def par(  # noqa: L001 IO entry point
     +out : String <- snaprun.par(plan(js, width, gb, at, by))
     par.read(par.nonblank(String.lines(out)), at, 0n)
 
-# the first line of an answer, which is the exit status
-def code.of(ls: List<&2, String>) -> String:
-  match ls:
-    case []:
-      "127"
-    case h <> t:
-      h
+# one char of the status: a newline ends it, and any other char is part of it,
+# with the rest of the status read only then
+def code.at(nl: Bool, +ch: Char, rest: Unit -> String) -> String:
+  match nl:
+    case True{}:
+      SNil{}
+    case False{}:
+      SCon{ch, rest(Unit{})}
 
-# everything after the first line, which is what the program printed
-def text.of(ls: List<&2, String>) -> String:
-  match ls:
-    case []:
-      ""
-    case h <> t:
-      String.join(t, "\n")
-
-# the exit status a run answered with
+# the exit status a run answered with: the answer up to its first newline.
+# It reads no further, so a long body costs nothing.
 def code(out: String) -> String:
-  code.of(String.lines(out))
+  match out:
+    case SNil{}:
+      SNil{}
+    case SCon{+ch, tail}:
+      code.at(Char.is_eq(ch, '\n'), ch, _u => code(tail))
 
-# what the program printed, stdout and stderr together
+# one char before the body: a newline starts the body, which is the rest as
+# it stands, and any other char is still the status
+def text.at(nl: Bool, +tail: String, rest: Unit -> String) -> String:
+  match nl:
+    case True{}:
+      tail
+    case False{}:
+      rest(Unit{})
+
+# what the program printed, stdout and stderr together: the answer after its
+# first newline, or nothing when it has none. The body is returned as it
+# stands, never walked.
 def text(out: String) -> String:
-  text.of(String.lines(out))
+  match out:
+    case SNil{}:
+      SNil{}
+    case SCon{ch, +tail}:
+      text.at(Char.is_eq(ch, '\n'), tail, _u => text(tail))
 
 # a run that finished with status 0
 def ok(+out: String) -> Bool:
