@@ -33,6 +33,7 @@ def main() -> IO(Unit):
 ```
 git clone https://github.com/Emerging-Patterns/snap
 cd snap
+mkdir -p bin
 bend examples/demo/main.bend -o bin/demo.bin
 bin/demo.bin
 ```
