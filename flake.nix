@@ -30,7 +30,7 @@
         inherit bend;
         src = self;
         pname = "demo";
-        version = "0.1.0"; # x-release-please-version
+        version = "1.0.0"; # x-release-please-version
         entry = "examples/demo/main.bend";
       };
     in {
