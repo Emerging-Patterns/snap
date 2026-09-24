@@ -169,4 +169,5 @@ Places a failed or missing read becomes a default: a file that cannot be opened 
 | Preliminary | REVIEW-9, README build | done | `mkdir -p bin` in the README; a `readme` CI job follows it without nix, then runs the proof gate by its first line |
 | Preliminary | REVIEW-8, bolt bump | done | bolt pinned at v1.7.0 (`38da7d9`), following snap's ez; S002, S003 and S004 fixed; `# noqa: L001` on `run`, `exec`, `start`, `par` and the demo's IO defs; the demo's `nth` replaced by an IO walk with the same output; bolt v1.7.0 says `clean` with every group at error |
 | Preliminary | REVIEW-10, ruleset on `main` | waiting on a maintainer | a repository setting, applied by hand |
-| One | SPEC.md, the 28 laws deleted, `trace` at warn | next | |
+| One | SPEC.md, the 28 laws deleted, `trace` at warn | done | SPEC.md with 7 Proved rows pending and 5 Trusted; all 28 laws and their proofs deleted, leaving `snap/LAWS.bend` and `PROOF.bend` as headers so the IO entry points stay under law; `laws` at warn for `coverage`, `closed` and `unsafe` at error, `trace` at warn. bolt: 0 errors, 7 coverage warnings on `cmd`, `line`, `job`, `plan`, `code`, `text`, `ok`. `trace` checked by planting a tag for an unknown ID (reported) and for a pending row (accepted) |
+| Two | SNAP-ANS-1 to 3, then REVIEW-7 | next | |
