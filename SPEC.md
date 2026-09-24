@@ -35,9 +35,9 @@ Untagged quantified laws are allowed. They pass the proof gate like any law, but
 
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
-| SNAP-ANS-1 | For every status `s` holding no newline and every body `b`, `code(s ++ "\n" ++ b)` is `s`. | Proved | pending | |
-| SNAP-ANS-2 | For every status `s` holding no newline and every body `b`, `text(s ++ "\n" ++ b)` is `b`. | Proved | pending | |
-| SNAP-ANS-3 | For every status `s` holding no newline and every body `b`, `ok(s ++ "\n" ++ b)` is true exactly when `s` is `"0"`. | Proved | pending | |
+| SNAP-ANS-1 | For every status `s` holding no newline and every body `b`, `code(s ++ "\n" ++ b)` is `s`. | Proved | proved | snap/LAWS.bend code_reads_status |
+| SNAP-ANS-2 | For every status `s` holding no newline and every body `b`, `text(s ++ "\n" ++ b)` is `b`. | Proved | proved | snap/LAWS.bend text_reads_body |
+| SNAP-ANS-3 | For every status `s` holding no newline and every body `b`, `ok(s ++ "\n" ++ b)` is true exactly when `s` is `"0"`. | Proved | proved | snap/LAWS.bend ok_reads_zero |
 | SNAP-ANS-4 | On both lanes, `snaprun.exec` answers one line holding the program's exit status, or 128 plus the signal that ended it, or 127 when it could not be started, then every byte the program wrote to stdout and stderr, in the order written; the program's stdin is empty. | Trusted | | |
 
 ### Start (SNAP-START)
@@ -57,11 +57,10 @@ Untagged quantified laws are allowed. They pass the proof gate like any law, but
 
 ## Left to prove
 
-Every Proved requirement is pending. The rollout in [docs/rfc/snap-spec.md](docs/rfc/snap-spec.md) proves them in this order:
+The rows below are pending. The rollout in [docs/rfc/snap-spec.md](docs/rfc/snap-spec.md) proves them in this order:
 
 | ID | What is missing |
 | :---- | :---- |
-| SNAP-ANS-1, SNAP-ANS-2, SNAP-ANS-3 | The laws, over `code`, `text` and `ok` as they are; they need a lemma that splitting on a separator inverts joining on it. Phase two. |
 | SNAP-ARGV-1, SNAP-ARGV-2 | `wire`, `wire.split`, `accepts` and `run.plan` do not exist yet, and the effects still split on newline (REVIEW-2, REVIEW-3). Phase three. |
 | SNAP-PAR-1, SNAP-PAR-2 | `par.plan`, `plan.split` and `par.answers` do not exist yet, and the effects stop at an empty job (REVIEW-3, REVIEW-6). Phase four. |
 
