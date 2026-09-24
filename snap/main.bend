@@ -23,15 +23,16 @@ def snaprun.start(cmd: String) -> IO(String):
   import "./start.js"
 
 # several programs run at once, answering with every exit status in the order
-# the jobs were given. The children write into a directory rather than down a
-# pipe, and `par` below reads those files back, so this answers statuses alone.
+# the jobs were given. The fields arrive as `par.plan` joins them. The children
+# write into a directory rather than down a pipe, and `par` below reads those
+# files back, so this answers statuses alone.
 def snaprun.par(cmd: String) -> IO(String):
   import "./par.c"
   import "./par.js"
 
-# the arguments joined on newlines. `par`'s wire uses it, and ez's `pass`
-# effect reads it; `run` and `start` use `wire`, since an argument may hold a
-# newline.
+# the arguments joined on newlines, which is the wire ez's `pass` effect
+# reads. snap's own effects are handed `wire` and `par.plan`, since an
+# argument may hold a newline.
 def cmd(argv: List<&2, String>) -> String:
   String.join(argv, "\n")
 
@@ -107,26 +108,44 @@ def run(argv: List<&2, String>) -> IO(String):  # noqa: L001 IO entry point
 def exec(argv: List<&2, String>) -> IO(String):  # noqa: L001 IO entry point
   run(argv)
 
-# one job as the effect wants it: how many arguments, then each of them. The
-# count is what lets an argument hold anything a line may hold, so no separator
-# between jobs has to be invented and then kept out of the arguments.
-def job(+argv: List<&2, String>) -> String:
-  Nat.show(List.length(&2, String, argv)) ++ "\n" ++ cmd(argv)
+# one job's fields on the `par` wire: each argument marked with a `+` in
+# front, then an empty field that ends the job. A marked field is never empty,
+# so the empty one cannot be mistaken for an argument, whatever the arguments
+# hold; and the empty job is the empty field alone.
+def job.fields(argv: List<&2, String>) -> List<&2, String>:
+  match argv:
+    case []:
+      [""]
+    case arg <> rest:
+      ("+" ++ arg) <> job.fields(rest)
 
-# the jobs in the order they were given, each behind the newline that ends the
-# field before it
-def plan.go(js: List<&2, List<&2, String>>) -> String:
+# a job accepted as `run` would accept it is sent as it is; any other is sent
+# as the empty job, which the effect answers as a program that could not be
+# started, in its own place
+def par.job.of(ok: Bool, argv: List<&2, String>) -> List<&2, String>:
+  match ok:
+    case True{}:
+      argv
+    case False{}:
+      []
+
+# the job `par` sends for an argv
+def par.job(+argv: List<&2, String>) -> List<&2, String>:
+  par.job.of(accepts(argv), argv)
+
+# every job's fields, in the order the jobs were given
+def par.fields(js: List<&2, List<&2, String>>) -> List<&2, String>:
   match js:
-    case Nil{}:
-      ""
-    case Con{h, t}:
-      "\n" ++ job(h) ++ plan.go(t)
+    case []:
+      []
+    case job <> rest:
+      List.append(&2, String, job.fields(par.job(job)), par.fields(rest))
 
-# what the effect is handed: how many may run at once, how many gigabytes each
-# was given, where they write, the second they must all be finished by, and
-# then every job
-def plan(js: List<&2, List<&2, String>>, +width: String, +gb: String, +at: String, +by: String) -> String:
-  String.join([width, gb, at, by], "\n") ++ plan.go(js)
+# what the `par` effect is handed: how many may run at once, how many gigabytes
+# each was given, where they write, the second they must all be finished by,
+# and then every job's fields, all joined on NUL
+def par.plan(js: List<&2, List<&2, String>>, width: String, gb: String, at: String, by: String) -> String:
+  String.join(width <> gb <> at <> by <> par.fields(js), "\0")
 
 # a step performed by an effect that does not wait: a refused argv answers
 # as a program that could not be started, and the effect is never called
@@ -228,16 +247,27 @@ def par.nonblank(ss: List<&2, String>) -> List<&2, String>:
 def par.of(+code: String, got: Maybe<&2, String>) -> String:
   code ++ "\n" ++ file.text_of(got)
 
-# every job's answer, paired with the file it wrote by its place in the order
-def par.read(cs: List<&2, String>, +at: String, +nn: Nat) -> IO(List<&2, String>):
+# every job's answer: each status paired with the body at its place in the
+# order, or with none when there is no body there
+def par.answers(cs: List<&2, String>, bodies: List<&2, Maybe<&2, String>>) -> List<&2, String>:
+  match cs bodies:
+    case Nil{} _bs:
+      []
+    case Con{+code, ct} Nil{}:
+      par.of(code, None{}) <> par.answers(ct, [])
+    case Con{+code, ct} Con{body, bt}:
+      par.of(code, body) <> par.answers(ct, bt)
+
+# the file each job wrote, one per status, by its place in the order
+def par.bodies(cs: List<&2, String>, +at: String, +nn: Nat) -> IO(List<&2, Maybe<&2, String>>):
   match cs:
-    case Nil{}:
-      IO.pure(List<&2, String>, Nil{})
-    case Con{+h, t}:
-      do IO<List<&2, String>>:
+    case []:
+      IO.pure(List<&2, Maybe<&2, String>>, [])
+    case _code <> ct:
+      do IO<List<&2, Maybe<&2, String>>>:
         src : Maybe<&2, String> <- file.read(at ++ "/" ++ Nat.show(nn))
-        +more : List<&2, String> <- par.read(t, at, (1n + nn : Nat))
-        return par.of(h, src) <> more
+        more : List<&2, Maybe<&2, String>> <- par.bodies(ct, at, (1n + nn : Nat))
+        return src <> more
 
 # several programs run at once, each answered exactly as `run` answers one, in
 # the order the jobs were given. `at` is a directory the caller owns and this
@@ -252,8 +282,10 @@ def par(  # noqa: L001 IO entry point
   +by: String
 ) -> IO(List<&2, String>):
   do IO<List<&2, String>>:
-    +out : String <- snaprun.par(plan(js, width, gb, at, by))
-    par.read(par.nonblank(String.lines(out)), at, 0n)
+    +out : String <- snaprun.par(par.plan(js, width, gb, at, by))
+    +cs : List<&2, String> <- IO.pure(List<&2, String>, par.nonblank(String.lines(out)))
+    bodies : List<&2, Maybe<&2, String>> <- par.bodies(cs, at, 0n)
+    return par.answers(cs, bodies)
 
 # one char of the status: a newline ends it, and any other char is part of it,
 # with the rest of the status read only then

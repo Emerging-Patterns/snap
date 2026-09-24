@@ -228,3 +228,286 @@ def Laws.refused_run_calls_nothing(eff, argv, h):
 def Laws.refused_start_calls_nothing(eff, argv, h):
   Equal.cong(Snap.Step, IO(String), st => Snap.start.with(eff, st),
     Snap.run.plan(argv), Snap.Refused{}, h)
+
+# two true bits and together to true
+def and.both(
+  a: Bool,
+  b: Bool,
+  ea: {a == True{} : Bool},
+  eb: {b == True{} : Bool}
+) -> {Bool.and(a, b) == True{} : Bool}:
+  Equal.trans(Bool, Bool.and(a, b), Bool.and(True{}, b), True{},
+    Equal.cong(Bool, Bool, v => Bool.and(v, b), a, True{}, ea), eb)
+
+# two lists clear of a char, one after the other, are clear of it
+def all_append(
+  xs: List<&2, String>,
+  +ys: List<&2, String>,
+  +sep: Char,
+  +ex: {Str.clear.all(xs, sep) == True{} : Bool},
+  ey: {Str.clear.all(ys, sep) == True{} : Bool}
+) -> {Str.clear.all(List.append(&2, String, xs, ys), sep) == True{} : Bool}:
+  match xs:
+    case []:
+      ey
+    case +xh <> +xt:
+      and.both(Str.clear(xh, sep), Str.clear.all(List.append(&2, String, xt, ys), sep),
+        Str.and.left(Str.clear(xh, sep), Str.clear.all(xt, sep), ex),
+        all_append(xt, ys, sep, Str.and.right(Str.clear(xh, sep), Str.clear.all(xt, sep), ex), ey))
+
+# a job's fields are clear of NUL when its arguments are: a mark is no NUL,
+# and the field that ends it is empty
+def job_fields_clear(
+  argv: List<&2, String>,
+  +ha: {Str.clear.all(argv, '\0') == True{} : Bool}
+) -> {Str.clear.all(Snap.job.fields(argv), '\0') == True{} : Bool}:
+  match argv:
+    case []:
+      {==}
+    case +arg <> +rest:
+      and.both(Str.clear(arg, '\0'), Str.clear.all(Snap.job.fields(rest), '\0'),
+        Str.and.left(Str.clear(arg, '\0'), Str.clear.all(rest, '\0'), ha),
+        job_fields_clear(rest, Str.and.right(Str.clear(arg, '\0'), Str.clear.all(rest, '\0'), ha)))
+
+# an accepted argv is clear of NUL
+def accepted_clear(
+  argv: List<&2, String>,
+  h: {Snap.accepts(argv) == True{} : Bool}
+) -> {Str.clear.all(argv, '\0') == True{} : Bool}:
+  match argv:
+    case []:
+      Empty.absurd({Str.clear.all([], '\0') == True{} : Bool}, StrProof.bit.clash(h))
+    case +prog <> +args:
+      Equal.trans(Bool,
+        Str.clear.all(prog <> args, '\0'),
+        Snap.free_of.all(prog <> args, '\0'),
+        True{},
+        Equal.sym(Bool, Snap.free_of.all(prog <> args, '\0'),
+          Str.clear.all(prog <> args, '\0'),
+          free_of_all_is_clear_all(prog <> args, '\0')),
+        Str.and.right(Bool.not(String.is_empty(prog)),
+          Snap.free_of.all(prog <> args, '\0'), h))
+
+# the job `par` sends, whichever way `accepts` went, has fields clear of NUL
+def sent_clear.at(
+  ok: Bool,
+  +job: List<&2, String>,
+  e: {Snap.accepts(job) == ok : Bool}
+) -> {Str.clear.all(Snap.job.fields(Snap.par.job.of(ok, job)), '\0') == True{} : Bool}:
+  match ok:
+    case True{}:
+      job_fields_clear(job, accepted_clear(job, e))
+    case False{}:
+      {==}
+
+# every job's fields are clear of NUL
+def fields_clear(
+  js: List<&2, List<&2, String>>
+) -> {Str.clear.all(Snap.par.fields(js), '\0') == True{} : Bool}:
+  match js:
+    case []:
+      {==}
+    case +job <> +rest:
+      all_append(Snap.job.fields(Snap.par.job(job)), Snap.par.fields(rest), '\0',
+        sent_clear.at(Snap.accepts(job), job, {==}), fields_clear(rest))
+
+# a job's fields, read before the rest, are that job in front of the rest's
+def jobs_of_job(
+  argv: List<&2, String>,
+  +rest: List<&2, String>
+) -> {Laws.jobs.of(List.append(&2, String, Snap.job.fields(argv), rest)) == argv <> Laws.jobs.of(rest)
+  : List<&2, List<&2, String>>}:
+  match argv:
+    case []:
+      {==}
+    case +arg <> +more:
+      Equal.cong(List<&2, List<&2, String>>, List<&2, List<&2, String>>,
+        gs => Laws.jobs.push(arg, gs),
+        Laws.jobs.of(List.append(&2, String, Snap.job.fields(more), rest)),
+        more <> Laws.jobs.of(rest),
+        jobs_of_job(more, rest))
+
+# and every job's fields read back as the jobs sent, in order
+def jobs_of_fields(
+  js: List<&2, List<&2, String>>
+) -> {Laws.jobs.of(Snap.par.fields(js)) == Laws.jobs.sent(js) : List<&2, List<&2, String>>}:
+  match js:
+    case []:
+      {==}
+    case +job <> +rest:
+      Equal.trans(List<&2, List<&2, String>>,
+        Laws.jobs.of(List.append(&2, String, Snap.job.fields(Snap.par.job(job)), Snap.par.fields(rest))),
+        Snap.par.job(job) <> Laws.jobs.of(Snap.par.fields(rest)),
+        Snap.par.job(job) <> Laws.jobs.sent(rest),
+        jobs_of_job(Snap.par.job(job), Snap.par.fields(rest)),
+        Equal.cong(List<&2, List<&2, String>>, List<&2, List<&2, String>>,
+          gs => Snap.par.job(job) <> gs,
+          Laws.jobs.of(Snap.par.fields(rest)), Laws.jobs.sent(rest), jobs_of_fields(rest)))
+
+# the header's four fields taken, and the rest dropped, whatever the rest is
+def header_cut(
+  +width: String,
+  +gb: String,
+  +at: String,
+  +by: String,
+  fields: List<&2, String>
+) -> {Laws.Split{width <> gb <> at <> by <> List.take(&2, String, fields, 0n),
+    Laws.jobs.of(List.drop(&2, String, fields, 0n))}
+  == Laws.Split{[width, gb, at, by], Laws.jobs.of(fields)} : Laws.Split}:
+  match fields:
+    case []:
+      {==}
+    case field <> rest:
+      {==}
+
+def Laws.par_plan_round_trip(js, width, gb, at, by, h):
+  Equal.trans(Laws.Split,
+    Laws.plan.split(Snap.par.plan(js, width, gb, at, by)),
+    Laws.Split{[width, gb, at, by], Laws.jobs.of(Snap.par.fields(js))},
+    Laws.Split{[width, gb, at, by], Laws.jobs.sent(js)},
+    Equal.trans(Laws.Split,
+      Laws.plan.split(Snap.par.plan(js, width, gb, at, by)),
+      Laws.Split{width <> gb <> at <> by <> List.take(&2, String, Snap.par.fields(js), 0n),
+        Laws.jobs.of(List.drop(&2, String, Snap.par.fields(js), 0n))},
+      Laws.Split{[width, gb, at, by], Laws.jobs.of(Snap.par.fields(js))},
+      Equal.cong(List<&2, String>, Laws.Split,
+        fs => Laws.Split{List.take(&2, String, fs, 4n), Laws.jobs.of(List.drop(&2, String, fs, 4n))},
+        Laws.wire.split(Snap.par.plan(js, width, gb, at, by)),
+        width <> gb <> at <> by <> Snap.par.fields(js),
+        Str.split_join(width, gb <> at <> by <> Snap.par.fields(js), '\0',
+          all_append([width, gb, at, by], Snap.par.fields(js), '\0', h, fields_clear(js)))),
+      header_cut(width, gb, at, by, Snap.par.fields(js))),
+    Equal.cong(List<&2, List<&2, String>>, Laws.Split, x => Laws.Split{[width, gb, at, by], x},
+      Laws.jobs.of(Snap.par.fields(js)), Laws.jobs.sent(js), jobs_of_fields(js)))
+
+# the induction hypothesis for the statuses: the rest's answers read back
+# the rest's statuses, whatever bodies they are paired with
+def ih.codes(ct: List<&2, String>, bs: List<&2, Maybe<&2, String>>) -> Type:
+  {Str.clear.all(ct, '\n') == True{} : Bool} -> {Laws.codes(Snap.par.answers(ct, bs)) == ct : List<&2, String>}
+
+# and for the bodies: the rest's answers read back the bodies they are owed
+def ih.texts(ct: List<&2, String>, bs: List<&2, Maybe<&2, String>>) -> Type:
+  {Str.clear.all(ct, '\n') == True{} : Bool} ->
+    {Laws.texts(Snap.par.answers(ct, bs)) == Laws.bodies.owed(ct, bs) : List<&2, String>}
+
+# one answer's status, read back, then the rest's
+def answers_codes.at(
+  +code: String,
+  +ct: List<&2, String>,
+  bodies: List<&2, Maybe<&2, String>>,
+  +h: {Str.clear.all(code <> ct, '\n') == True{} : Bool},
+  ih: @bs: List<&2, Maybe<&2, String>> -> ih.codes(ct, bs)
+) -> {Laws.codes(Snap.par.answers(code <> ct, bodies)) == code <> ct : List<&2, String>}:
+  match bodies:
+    case []:
+      Equal.trans(List<&2, String>,
+        Snap.code(Snap.par.of(code, None{})) <> Laws.codes(Snap.par.answers(ct, [])),
+        code <> Laws.codes(Snap.par.answers(ct, [])),
+        code <> ct,
+        Equal.cong(String, List<&2, String>, x => x <> Laws.codes(Snap.par.answers(ct, [])),
+          Snap.code(Snap.par.of(code, None{})), code,
+          Laws.code_reads_status(code, "", Str.and.left(Str.clear(code, '\n'), Str.clear.all(ct, '\n'), h))),
+        Equal.cong(List<&2, String>, List<&2, String>, y => code <> y,
+          Laws.codes(Snap.par.answers(ct, [])), ct,
+          ih([], Str.and.right(Str.clear(code, '\n'), Str.clear.all(ct, '\n'), h))))
+    case +body <> +bt:
+      Equal.trans(List<&2, String>,
+        Snap.code(Snap.par.of(code, body)) <> Laws.codes(Snap.par.answers(ct, bt)),
+        code <> Laws.codes(Snap.par.answers(ct, bt)),
+        code <> ct,
+        Equal.cong(String, List<&2, String>, x => x <> Laws.codes(Snap.par.answers(ct, bt)),
+          Snap.code(Snap.par.of(code, body)), code,
+          Laws.code_reads_status(code, Snap.file.text_of(body),
+            Str.and.left(Str.clear(code, '\n'), Str.clear.all(ct, '\n'), h))),
+        Equal.cong(List<&2, String>, List<&2, String>, y => code <> y,
+          Laws.codes(Snap.par.answers(ct, bt)), ct,
+          ih(bt, Str.and.right(Str.clear(code, '\n'), Str.clear.all(ct, '\n'), h))))
+
+def Laws.par_answers_codes(cs, bodies, h):
+  match cs:
+    case []:
+      {==}
+    case +code <> +ct:
+      answers_codes.at(code, ct, bodies, h, bs => hh => Laws.par_answers_codes(ct, bs, hh))
+
+# one answer's body, read back, then the rest's
+def answers_texts.at(
+  +code: String,
+  +ct: List<&2, String>,
+  bodies: List<&2, Maybe<&2, String>>,
+  +h: {Str.clear.all(code <> ct, '\n') == True{} : Bool},
+  ih: @bs: List<&2, Maybe<&2, String>> -> ih.texts(ct, bs)
+) -> {Laws.texts(Snap.par.answers(code <> ct, bodies)) == Laws.bodies.owed(code <> ct, bodies) : List<&2, String>}:
+  match bodies:
+    case []:
+      Equal.trans(List<&2, String>,
+        Snap.text(Snap.par.of(code, None{})) <> Laws.texts(Snap.par.answers(ct, [])),
+        "" <> Laws.texts(Snap.par.answers(ct, [])),
+        "" <> Laws.bodies.owed(ct, []),
+        Equal.cong(String, List<&2, String>, x => x <> Laws.texts(Snap.par.answers(ct, [])),
+          Snap.text(Snap.par.of(code, None{})), "",
+          Laws.text_reads_body(code, "", Str.and.left(Str.clear(code, '\n'), Str.clear.all(ct, '\n'), h))),
+        Equal.cong(List<&2, String>, List<&2, String>, y => "" <> y,
+          Laws.texts(Snap.par.answers(ct, [])), Laws.bodies.owed(ct, []),
+          ih([], Str.and.right(Str.clear(code, '\n'), Str.clear.all(ct, '\n'), h))))
+    case +body <> +bt:
+      Equal.trans(List<&2, String>,
+        Snap.text(Snap.par.of(code, body)) <> Laws.texts(Snap.par.answers(ct, bt)),
+        Snap.file.text_of(body) <> Laws.texts(Snap.par.answers(ct, bt)),
+        Snap.file.text_of(body) <> Laws.bodies.owed(ct, bt),
+        Equal.cong(String, List<&2, String>, x => x <> Laws.texts(Snap.par.answers(ct, bt)),
+          Snap.text(Snap.par.of(code, body)), Snap.file.text_of(body),
+          Laws.text_reads_body(code, Snap.file.text_of(body),
+            Str.and.left(Str.clear(code, '\n'), Str.clear.all(ct, '\n'), h))),
+        Equal.cong(List<&2, String>, List<&2, String>, y => Snap.file.text_of(body) <> y,
+          Laws.texts(Snap.par.answers(ct, bt)), Laws.bodies.owed(ct, bt),
+          ih(bt, Str.and.right(Str.clear(code, '\n'), Str.clear.all(ct, '\n'), h))))
+
+def Laws.par_answers_texts(cs, bodies, h):
+  match cs:
+    case []:
+      {==}
+    case +code <> +ct:
+      answers_texts.at(code, ct, bodies, h, bs => hh => Laws.par_answers_texts(ct, bs, hh))
+
+# statuses that each have a char are kept, every one
+def nonblank_filled(
+  ss: List<&2, String>,
+  +hf: {Laws.filled.all(ss) == True{} : Bool}
+) -> {Snap.par.nonblank(ss) == ss : List<&2, String>}:
+  match ss:
+    case []:
+      {==}
+    case +str <> +rest:
+      Equal.trans(List<&2, String>,
+        Bool.pick(List<&2, String>, String.is_empty(str), Snap.par.nonblank(rest), str <> Snap.par.nonblank(rest)),
+        str <> Snap.par.nonblank(rest),
+        str <> rest,
+        Equal.cong(Bool, List<&2, String>,
+          b => Bool.pick(List<&2, String>, b, Snap.par.nonblank(rest), str <> Snap.par.nonblank(rest)),
+          String.is_empty(str), False{},
+          Str.not.true(String.is_empty(str),
+            Str.and.left(Bool.not(String.is_empty(str)), Laws.filled.all(rest), hf))),
+        Equal.cong(List<&2, String>, List<&2, String>, y => str <> y,
+          Snap.par.nonblank(rest), rest,
+          nonblank_filled(rest, Str.and.right(Bool.not(String.is_empty(str)), Laws.filled.all(rest), hf))))
+
+def Laws.par_statuses_read_back(cs, h, hf):
+  match cs:
+    case []:
+      {==}
+    case +code <> +ct:
+      Equal.trans(List<&2, String>,
+        Snap.par.nonblank(String.lines(String.join(code <> ct, "\n"))),
+        Snap.par.nonblank(code <> ct),
+        code <> ct,
+        Equal.cong(List<&2, String>, List<&2, String>, ls => Snap.par.nonblank(ls),
+          String.lines(String.join(code <> ct, "\n")), code <> ct,
+          Str.split_join(code, ct, '\n', h)),
+        nonblank_filled(code <> ct, hf))
+
+def Laws.cmd_round_trip(prog, args, h):
+  Str.split_join(prog, args, '\n', h)
+
+def Laws.line_round_trip(prog, args, h):
+  Str.split_join(prog, args, '\n', h)

@@ -17,7 +17,7 @@ A law with no binder claims one computed case and no requirement, so snap has no
 
 A pending requirement may already have tagged quantified laws that prove part of it. The Law column names them, and "Left to prove" below says what is missing before the status becomes proved.
 
-The Law column lists `<path> <law>` entries, the path relative to this file, joined by `; `. bolt's `trace` rule (L005) reads this file and checks it against the tags: every law a Proved row names must exist, have a binder and carry the row's ID; a proved row must name at least one; a Trusted row names none and has a row in the trust boundary; and no law may carry an ID that is not a Proved row here. `trace` is at `warn` in `bolt.bend` until no row is pending, then at `error`.
+The Law column lists `<path> <law>` entries, the path relative to this file, joined by `; `. bolt's `trace` rule (L005) reads this file and checks it against the tags: every law a Proved row names must exist, have a binder and carry the row's ID; a proved row must name at least one; a Trusted row names none and has a row in the trust boundary; and no law may carry an ID that is not a Proved row here. `trace` is at `error` in `bolt.bend`.
 
 Untagged quantified laws are allowed. They pass the proof gate like any law, but nothing here protects them, so a change may edit or delete them freely.
 
@@ -50,20 +50,14 @@ Untagged quantified laws are allowed. They pass the proof gate like any law, but
 
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
-| SNAP-PAR-1 | For every job list and every header whose fields hold no NUL, `plan.split(par.plan(js, width, gb, at, by))` is exactly the header and one job per job of `js`, in order, each the job's argv when it `accepts` and the empty job otherwise. | Proved | pending | |
-| SNAP-PAR-2 | For every list of statuses and every list of bodies, `par.answers` has exactly one answer per status, and the answer at position `n` is status `n`, a newline, then body `n`, or the empty string when there is no body `n`. | Proved | pending | |
+| SNAP-PAR-1 | For every job list and every header whose fields hold no NUL, `plan.split(par.plan(js, width, gb, at, by))` is exactly the header and one job per job of `js`, in order, each the job's argv when it `accepts` and the empty job otherwise. | Proved | proved | snap/LAWS.bend par_plan_round_trip |
+| SNAP-PAR-2 | For every list of statuses and every list of bodies, `par.answers` has exactly one answer per status, and the answer at position `n` reads back status `n` and body `n`, or the empty body when there is no body `n`; and the statuses the effect answers, one to a line, each holding a char and no newline, are read back exactly. | Proved | proved | snap/LAWS.bend par_answers_codes; snap/LAWS.bend par_answers_texts; snap/LAWS.bend par_statuses_read_back |
 | SNAP-PAR-3 | On both lanes, `snaprun.par` answers exactly one status per job of its wire, in order, each as `snaprun.exec` would for that job; 127 for the empty job; 124 for a job skipped because the deadline had passed or ended by it; and it writes each job's output to `at/n` and truncates `at/n` for every job it does not run. | Trusted | | |
 | SNAP-PAR-4 | `snaprun.par` runs at most `width` jobs at once; an empty or zero width is the online cores, reduced to what the spare memory holds at `gb` each, and at least 1. | Trusted | | |
 
 ## Left to prove
 
-The rows below are pending. The rollout in [docs/rfc/snap-spec.md](docs/rfc/snap-spec.md) proves them in this order:
-
-| ID | What is missing |
-| :---- | :---- |
-| SNAP-PAR-1, SNAP-PAR-2 | `par.plan`, `plan.split` and `par.answers` do not exist yet, and the effects stop at an empty job (REVIEW-3, REVIEW-6). Phase four. |
-
-The Trusted rows SNAP-ANS-4 and SNAP-PAR-3 do not hold as written today on every lane; the decided behavior changes REVIEW-4 and REVIEW-6 make them hold. SNAP-START-1 holds on both lanes since REVIEW-5. The inventory lists each divergence.
+No requirement is pending. The Trusted row SNAP-ANS-4 does not yet hold as written on the JS lane, which reports a signal as 128, reads at most 1 MB of output, and puts stderr after stdout; the decided change REVIEW-4 in [docs/rfc/snap-spec.md](docs/rfc/snap-spec.md) makes it hold, and SNAP-PAR-3 with it for the JS lane's deadline status and a missing directory.
 
 ## Trust boundary
 
@@ -71,7 +65,7 @@ The Trusted rows SNAP-ANS-4 and SNAP-PAR-3 do not hold as written today on every
 | :---- | :---- | :---- |
 | SNAP-TRUST-1 | The Bend checker is sound. | It cannot be checked from inside Bend; this is EZ-TRUST-1. snap pins bend 2.0.27 through the flake. |
 | SNAP-TRUST-2 | The proof gate runner runs bend on every PROOF.bend and accepts only an exact `All terms check.` first line. | It is ez's `mkProofs` in the `proofs` flake check, and a shell loop in the `readme` CI job. |
-| SNAP-TRUST-3 | Each effect, C and JS, splits its wire exactly as `wire.split` and `plan.split` do. | Foreign code; it is the effects' faithfulness to the planner, and each split is a few lines reviewed line by line. |
+| SNAP-TRUST-3 | Each effect, C and JS, reads every wire the planners make exactly as `wire.split` and `plan.split` in snap/LAWS.bend do. | Foreign code; it is the effects' faithfulness to the planner, and each split is a few lines reviewed line by line. |
 | SNAP-TRUST-4 | Every commit on `main` passed `ci.yml`. | Holds only once a maintainer adds the ruleset in REVIEW-10. Today it does not hold. |
 | SNAP-ARGV-3 | Each effect executes its argv with no shell. | Foreign code calling `execvp` and node's `child_process`. |
 | SNAP-ANS-4 | `snaprun.exec`'s answer shape. | Foreign code and the kernel's report of how a child ended. |

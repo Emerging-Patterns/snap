@@ -32,7 +32,9 @@ Term snaprun_start_run(Env e, Term* f, IoWork* w) {
   char** argv = malloc((argc + 1) * sizeof(char*));
   size_t at = 0;
   argv[at++] = cmd;
-  for (size_t i = 0; i + 1 < (size_t)n; i++) {
+  // an argument starts after every NUL, the last one included: an empty last
+  // argument is the empty string at the end, which io_cstr terminates
+  for (size_t i = 0; i < (size_t)n; i++) {
     if (cmd[i] == '\0') {
       argv[at++] = cmd + i + 1;
     }

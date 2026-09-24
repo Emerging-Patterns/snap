@@ -1,5 +1,6 @@
 // snaprun.par: the JS lane's twin of par.c. The fields arrive the way par.c
-// takes them and go straight to spawnSync, so no shell parses them.
+// takes them, NUL separated, each job's arguments marked with a `+` and ended
+// by an empty field, and go straight to spawnSync, so no shell parses them.
 //
 // This one runs the jobs in turn rather than at once. Bend's JS effects answer
 // synchronously, and node has no way to wait on several spawned children from
@@ -8,23 +9,36 @@
 function snaprun_par(cmd) {
   const cp = require("child_process");
   const fs = require("fs");
-  const line = cmd.split("\n");
+  const line = cmd.split("\0");
   const dir = line.length > 2 ? line[2] : ".";
   const by = line.length > 3 ? parseInt(line[3], 10) : 0;
-  const codes = [];
-  let i = 4;
-  let n = 0;
-  while (i < line.length) {
-    const argc = parseInt(line[i], 10);
-    if (!(argc > 0)) {
-      break;
+  // the jobs: the marked fields up to each empty one, marks stepped over
+  const jobs = [];
+  let args = [];
+  for (let i = 4; i < line.length; i++) {
+    if (line[i] === "") {
+      jobs.push(args);
+      args = [];
+    } else {
+      args.push(line[i].slice(1));
     }
-    const args = line.slice(i + 1, i + 1 + argc);
-    i += argc + 1;
+  }
+  // a job that is not run still has its file emptied, so nothing an earlier
+  // run left there is read back as its output
+  const empty = (path) => {
+    try {
+      fs.writeFileSync(path, "");
+    } catch (e) {
+      // no file to empty is no file to read back
+    }
+  };
+  const codes = [];
+  for (let n = 0; n < jobs.length; n++) {
+    const args = jobs[n];
     const spare = by > 0 ? by - Math.floor(Date.now() / 1000) : 0;
-    if (by > 0 && spare <= 0) {
-      codes.push(124);
-      n += 1;
+    if (args.length === 0 || (by > 0 && spare <= 0)) {
+      empty(dir + "/" + n);
+      codes.push(args.length === 0 ? 127 : 124);
       continue;
     }
     const out = fs.openSync(dir + "/" + n, "w");
@@ -36,7 +50,6 @@ function snaprun_par(cmd) {
       codes.push(127);
     }
     fs.closeSync(out);
-    n += 1;
   }
   return codes.join("\n");
 }
