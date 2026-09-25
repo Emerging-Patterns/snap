@@ -63,7 +63,7 @@ No requirement is pending, and every Trusted row holds as written on both lanes,
 
 | ID | Assumption | Why it is trusted |
 | :---- | :---- | :---- |
-| SNAP-TRUST-1 | The Bend checker is sound. | It cannot be checked from inside Bend; this is EZ-TRUST-1. snap pins bend 2.0.27 through the flake. |
+| SNAP-TRUST-1 | The Bend checker is sound. | It cannot be checked from inside Bend; this is EZ-TRUST-1. snap pins bend 2.0.28 through the flake. |
 | SNAP-TRUST-2 | The proof gate runner runs bend on every PROOF.bend and accepts only an exact `All terms check.` first line. | It is ez's `mkProofs` in the `proofs` flake check, and a shell loop in the `readme` CI job. |
 | SNAP-TRUST-3 | Each effect, C and JS, reads every wire the planners make exactly as `wire.split` and `plan.split` in LAWS.bend do. | Foreign code; it is the effects' faithfulness to the planner, and each split is a few lines reviewed line by line. |
 | SNAP-TRUST-4 | Every commit on `main` passed `ci.yml`. | Holds only once a maintainer adds the ruleset in REVIEW-10. Today it does not hold. |
