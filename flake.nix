@@ -11,12 +11,6 @@
     inputs.nixpkgs.follows = "nixpkgs";
     inputs.bend.follows = "bend";
   };
-  inputs.bolt = {
-    url = "github:Emerging-Patterns/bolt";
-    inputs.nixpkgs.follows = "nixpkgs";
-    inputs.bend.follows = "bend";
-    inputs.ez.follows = "ez";
-  };
 
   outputs = { self, nixpkgs, ... }@inputs:
     let
@@ -24,7 +18,7 @@
       ez = inputs.ez.lib.${system};
       ezBin = inputs.ez.packages.${system}.default;
       bend = inputs.bend.packages.${system}.default;
-      bolt = inputs.bolt.packages.${system}.default;
+      bolt = ez.toolPackage { name = "bolt"; src = self; inherit bend; wrapFlags = [ "--gpu" "off" ]; };
       bend-cc = ez.bend-cc;
       demo = ez.mkPackage {
         inherit bend;
@@ -39,10 +33,11 @@
       checks.${system} = {
         inherit demo;
         proofs = ez.mkProofs { ez = ezBin; src = self; };
-        lint = ez.mkLint { inherit bolt; src = self; };
+        lint = ez.mkLint { src = self; };
       };
       devShells.${system}.default = ez.mkShell {
-        packages = [ bend bend-cc ezBin bolt ];
+        src = self;
+        packages = [ bend bend-cc ezBin ];
       };
     };
 }
