@@ -13,3 +13,5 @@ function snaprun_start(cmd) {
     return "0";
   }
 }
+
+io_eff(CID(snaprun.start), snaprun_start);

@@ -252,5 +252,5 @@ Term snaprun_par_run(Env e, Term* f, IoWork* w) {
 }
 
 static void __attribute__((constructor)) snaprun_par_use(void) {
-  io_eff(CID_SNAPRUN_PAR, snaprun_par_run, 0);
+  io_eff(CID(snaprun.par), snaprun_par_run, 0);
 }

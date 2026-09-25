@@ -82,5 +82,5 @@ Term snaprun_exec_run(Env e, Term* f, IoWork* w) {
 }
 
 static void __attribute__((constructor)) snaprun_exec_use(void) {
-  io_eff(CID_SNAPRUN_EXEC, snaprun_exec_run, 0);
+  io_eff(CID(snaprun.exec), snaprun_exec_run, 0);
 }

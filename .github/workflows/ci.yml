@@ -16,8 +16,8 @@ jobs:
   readme:
     runs-on: ubuntu-latest
     env:
-      BEND_VERSION: 2.0.27
-      BEND_SHA256: 58adc86af6605ed0c48f7d84e4c23028f78893ce4a867a20a4f004b11582687b
+      BEND_VERSION: 2.0.28
+      BEND_SHA256: 22bb6d5f6bce8ae2c5b340371fedddcbd90edc07a48b6e2b351a944c4558a3eb
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - name: Install bend
@@ -31,6 +31,8 @@ jobs:
       - run: mkdir -p bin
       - run: bend examples/demo/main.bend -o bin/demo.bin
       - run: bin/demo.bin
+      # the same demo on the JS lane, through the .js twins of the effects
+      - run: bend examples/demo/main.bend
       # bend exits 0 when a proof leans on unsafe or foreign code, so the
       # gate is the first line, not the status
       - name: Proof gate
