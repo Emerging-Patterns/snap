@@ -21,10 +21,10 @@ in [docs/rfc/snap-spec.md](docs/rfc/snap-spec.md).
 With [Bend](https://github.com/bendlang/bend) alone there is nothing to
 install: import snap by its hub name and `bend` fetches it from
 [the hub](https://hub.bend-lang.com) into `~/.bend/lib` on the first run.
-`0x103d0af04de36ab98b311e537366ec67` is snap v1.0.0.
+`0xabe575924687afad4cee1a2c1194d639` is snap v1.1.0.
 
 ```
-import 0x103d0af04de36ab98b311e537366ec67/main.bend as Snap
+import 0xabe575924687afad4cee1a2c1194d639/main.bend as Snap
 ```
 
 Or with [ez](https://github.com/Emerging-Patterns/ez), which records the
@@ -40,7 +40,7 @@ ez add Emerging-Patterns/snap
 stderr together. `Snap.code` reads the status; `Snap.text` reads the body.
 
 ```
-import 0x103d0af04de36ab98b311e537366ec67/main.bend as Snap
+import 0xabe575924687afad4cee1a2c1194d639/main.bend as Snap
 
 def main() -> IO(Unit):
   do IO<Unit>:
