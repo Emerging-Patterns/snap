@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/Emerging-Patterns/snap/compare/v1.0.0...v1.1.0) (2026-09-25)
+
+
+### Bug Fixes
+
+* bend 2.0.28 (effect registration) ([#19](https://github.com/Emerging-Patterns/snap/issues/19)) ([fcdb7e1](https://github.com/Emerging-Patterns/snap/commit/fcdb7e1d6ae03013102647899afe6b97f541e73a))
+
 ## [1.0.0](https://github.com/Emerging-Patterns/snap/compare/v0.1.0...v1.0.0) (2026-09-24)
 
 
