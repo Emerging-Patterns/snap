@@ -66,3 +66,5 @@ function snaprun_par(cmd) {
   }
   return codes.join("\n");
 }
+
+io_eff(CID(snaprun.par), snaprun_par);
