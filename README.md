@@ -18,10 +18,19 @@ in [docs/rfc/snap-spec.md](docs/rfc/snap-spec.md).
 
 ## Install
 
-Use with [Bend](https://github.com/bendlang/bend) or install easily with [ez](https://github.com/Emerging-Patterns/ez):
+With [Bend](https://github.com/bendlang/bend) alone there is nothing to
+install: import snap by its hub name and `bend` fetches it from
+[the hub](https://hub.bend-lang.com) into `~/.bend/lib` on the first run.
+`0x103d0af04de36ab98b311e537366ec67` is snap v1.0.0.
 
 ```
-ez init
+import 0x103d0af04de36ab98b311e537366ec67/main.bend as Snap
+```
+
+Or with [ez](https://github.com/Emerging-Patterns/ez), which records the
+package in `ez.toml` (`ez init` makes one):
+
+```
 ez add Emerging-Patterns/snap
 ```
 
@@ -31,7 +40,7 @@ ez add Emerging-Patterns/snap
 stderr together. `Snap.code` reads the status; `Snap.text` reads the body.
 
 ```
-import 0x9bfd9d57916f3439316c2775fd1f10b4/main.bend as Snap
+import 0x103d0af04de36ab98b311e537366ec67/main.bend as Snap
 
 def main() -> IO(Unit):
   do IO<Unit>:
