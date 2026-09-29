@@ -1,6 +1,6 @@
 # snap specification
 
-This is the list of every behavior snap guarantees, each under a stable requirement ID. Every requirement has one of two levels. A **Proved** requirement holds for every input, and is backed by a quantified law in a LAWS.bend that passes the proof gate. A **Trusted** requirement is an assumption about something snap cannot check from inside its own gate, most of all the three foreign effects that start programs, and it is listed in the trust boundary below. A Proved requirement whose law has not landed yet has status **pending**: we intend to prove it, and until then it is not guaranteed. The proof gate is this check: for every PROOF.bend in the tree, the first line `bend PROOF.bend` prints is exactly `All terms check.` CI runs it in the `proofs` flake check and in the `readme` job.
+This is the list of every behavior snap guarantees, each under a stable requirement ID. Every requirement has one of two levels. A **Proved** requirement holds for every input, and is backed by a quantified law in a LAWS.bend that passes the proof gate. A **Trusted** requirement is an assumption about something snap cannot check from inside its own gate, most of all the three foreign effects that start programs, and it is listed in the trust boundary below. A Proved requirement whose law has not landed yet has status **pending**: we intend to prove it, and until then it is not guaranteed. The proof gate is this check: for every PROOF.bend in the tree, the first line `bend PROOF.bend` prints is exactly `ALL PROOFS CHECK`. CI runs it in the `proofs` flake check and in the `readme` job. The gate is the PROOF.bend files, not the entry: bend's verdict fails any file whose imports hold foreign code, so `bend main.bend --check-only` prints `SOME PROOFS FAIL`, naming the effects and the defs that call them, and that is expected. For the same reason no LAWS.bend imports main.bend: the answer laws are stated over `src/answer.bend` and the `cmd` and `line` laws over `src/argv.bend`, whose defs main.bend's `code`, `text`, `ok`, `cmd` and `line` return unchanged (SNAP-TRUST-5).
 
 The reasoning behind each requirement, and the decisions that shaped them, are in [docs/rfc/snap-spec.md](docs/rfc/snap-spec.md). What snap proved before this list existed, and what we found, is in that RFC's "Audit record".
 
@@ -63,10 +63,11 @@ No requirement is pending, and every Trusted row holds as written on both lanes,
 
 | ID | Assumption | Why it is trusted |
 | :---- | :---- | :---- |
-| SNAP-TRUST-1 | The Bend checker is sound. | It cannot be checked from inside Bend; this is EZ-TRUST-1. snap pins bend 2.0.31 through the flake. |
-| SNAP-TRUST-2 | The proof gate runner runs bend on every PROOF.bend and accepts only an exact `All terms check.` first line. | It is ez's `mkProofs` in the `proofs` flake check, and a shell loop in the `readme` CI job. |
+| SNAP-TRUST-1 | The Bend checker is sound. | It cannot be checked from inside Bend; this is EZ-TRUST-1. snap pins bend 2.0.34 through the flake. |
+| SNAP-TRUST-2 | The proof gate runner runs bend on every PROOF.bend and accepts only an exact `ALL PROOFS CHECK` first line. | It is a shell loop in the `proofs` flake check (in place of ez's `mkProofs` until ez runs on bend 2.0.34) and in the `readme` CI job. |
 | SNAP-TRUST-3 | Each effect, C and JS, reads every wire the planners make exactly as `wire.split` and `plan.split` in LAWS.bend do. | Foreign code; it is the effects' faithfulness to the planner, and each split is a few lines reviewed line by line. |
 | SNAP-TRUST-4 | Every commit on `main` passed `ci.yml`. | Holds only once a maintainer adds the ruleset in REVIEW-10. Today it does not hold. |
+| SNAP-TRUST-5 | main.bend's `code`, `text` and `ok` are `src/answer.bend`'s, and its `cmd` and `line` are `src/argv.bend`'s, each returned unchanged, so the laws over those modules hold of the interface. | Each is a one-line delegate reviewed by reading main.bend; a proof cannot import main.bend, whose effects are foreign code and fail bend's verdict for every file that imports it. |
 | SNAP-ARGV-3 | Each effect executes its argv with no shell. | Foreign code calling `execvp` and node's `child_process`. |
 | SNAP-ANS-4 | `snaprun.exec`'s answer shape. | Foreign code and the kernel's report of how a child ended. |
 | SNAP-START-1 | `snaprun.start`'s pid or `0`. | Foreign code. |

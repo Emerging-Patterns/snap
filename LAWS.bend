@@ -1,8 +1,8 @@
 # snap: the laws. The human states them; PROOF.bend must prove them. Each
 # law that proves a SPEC.md requirement carries its ID (see SPEC.md).
 import Base
-import ./main.bend as Snap
 import ./src/argv.bend as Argv
+import ./src/answer.bend as Answer
 import ./src/par.bend as Par
 import ./src/file.bend as File
 import ./check/LAWS.bend as Str
@@ -16,7 +16,7 @@ law code_reads_status:
   for +s: String
   for +b: String
   for h: {Str.clear(s, '\n') == True{} : Bool}
-  {Snap.code(s ++ "\n" ++ b) == s : String}
+  {Answer.code(s ++ "\n" ++ b) == s : String}
 
 # LAW: `text` reads back the body, whatever it holds
 # SNAP-ANS-2
@@ -24,7 +24,7 @@ law text_reads_body:
   for +s: String
   for +b: String
   for h: {Str.clear(s, '\n') == True{} : Bool}
-  {Snap.text(s ++ "\n" ++ b) == b : String}
+  {Answer.text(s ++ "\n" ++ b) == b : String}
 
 # LAW: `ok` is true exactly when the status is "0"
 # SNAP-ANS-3
@@ -32,7 +32,7 @@ law ok_reads_zero:
   for +s: String
   for +b: String
   for h: {Str.clear(s, '\n') == True{} : Bool}
-  {Snap.ok(s ++ "\n" ++ b) == String.eq(s, "0") : Bool}
+  {Answer.ok(s ++ "\n" ++ b) == String.eq(s, "0") : Bool}
 
 # Handing argv to an effect. `run`, `exec` and `start` decide in `run.plan`
 # whether an argv can arrive whole, and hand the effect `wire(argv)` only then.
@@ -172,7 +172,7 @@ def codes(answers: List<&2, String>) -> List<&2, String>:
     case []:
       []
     case ans <> rest:
-      Snap.code(ans) <> codes(rest)
+      Answer.code(ans) <> codes(rest)
 
 # the body each answer reads back
 def texts(answers: List<&2, String>) -> List<&2, String>:
@@ -180,7 +180,7 @@ def texts(answers: List<&2, String>) -> List<&2, String>:
     case []:
       []
     case ans <> rest:
-      Snap.text(ans) <> texts(rest)
+      Answer.text(ans) <> texts(rest)
 
 # the body each status is owed: the file at its place in the order, or
 # nothing when there is none there
@@ -234,11 +234,11 @@ law cmd_round_trip:
   for +prog: String
   for +args: List<&2, String>
   for h: {Str.clear.all(prog <> args, '\n') == True{} : Bool}
-  {String.lines(Snap.cmd(prog <> args)) == prog <> args : List<&2, String>}
+  {String.lines(Argv.cmd(prog <> args)) == prog <> args : List<&2, String>}
 
 # LAW: and `line` is the same wire
 law line_round_trip:
   for +prog: String
   for +args: List<&2, String>
   for h: {Str.clear.all(prog <> args, '\n') == True{} : Bool}
-  {String.lines(Snap.line(prog <> args)) == prog <> args : List<&2, String>}
+  {String.lines(Argv.line(prog <> args)) == prog <> args : List<&2, String>}
