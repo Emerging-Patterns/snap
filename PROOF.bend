@@ -1,7 +1,6 @@
 # snap: the proofs. `bend PROOF.bend` is the check.
 import Base
 import ./LAWS.bend as Laws
-import ./main.bend as Snap
 import ./src/argv.bend as Argv
 import ./src/answer.bend as Answer
 import ./src/par.bend as Par
@@ -33,17 +32,17 @@ def code_step(
   +tail: String,
   +b: String,
   +h: {Str.clear(SCon{ch, tail}, '\n') == True{} : Bool},
-  ih: {Str.clear(tail, '\n') == True{} : Bool} -> {Snap.code(tail ++ "\n" ++ b) == tail : String}
-) -> {Snap.code(SCon{ch, tail} ++ "\n" ++ b) == SCon{ch, tail} : String}:
+  ih: {Str.clear(tail, '\n') == True{} : Bool} -> {Answer.code(tail ++ "\n" ++ b) == tail : String}
+) -> {Answer.code(SCon{ch, tail} ++ "\n" ++ b) == SCon{ch, tail} : String}:
   Equal.trans(String,
-    Answer.code.at(Char.is_eq(ch, '\n'), ch, _u => Snap.code(tail ++ "\n" ++ b)),
-    Answer.code.at(False{}, ch, _u => Snap.code(tail ++ "\n" ++ b)),
+    Answer.code.at(Char.is_eq(ch, '\n'), ch, _u => Answer.code(tail ++ "\n" ++ b)),
+    Answer.code.at(False{}, ch, _u => Answer.code(tail ++ "\n" ++ b)),
     SCon{ch, tail},
     Equal.cong(Bool, String,
-      nl => Answer.code.at(nl, ch, _u => Snap.code(tail ++ "\n" ++ b)),
+      nl => Answer.code.at(nl, ch, _u => Answer.code(tail ++ "\n" ++ b)),
       Char.is_eq(ch, '\n'), False{}, not_nl(ch, tail, h)),
     Equal.cong(String, String, x => SCon{ch, x},
-      Snap.code(tail ++ "\n" ++ b), tail, ih(clear_tail(ch, tail, h))))
+      Answer.code(tail ++ "\n" ++ b), tail, ih(clear_tail(ch, tail, h))))
 
 # by induction on the status: its chars are kept one by one, and the newline
 # after it ends the reading
@@ -61,14 +60,14 @@ def text_step(
   +tail: String,
   +b: String,
   +h: {Str.clear(SCon{ch, tail}, '\n') == True{} : Bool},
-  ih: {Str.clear(tail, '\n') == True{} : Bool} -> {Snap.text(tail ++ "\n" ++ b) == b : String}
-) -> {Snap.text(SCon{ch, tail} ++ "\n" ++ b) == b : String}:
+  ih: {Str.clear(tail, '\n') == True{} : Bool} -> {Answer.text(tail ++ "\n" ++ b) == b : String}
+) -> {Answer.text(SCon{ch, tail} ++ "\n" ++ b) == b : String}:
   Equal.trans(String,
-    Answer.text.at(Char.is_eq(ch, '\n'), tail ++ "\n" ++ b, _u => Snap.text(tail ++ "\n" ++ b)),
-    Answer.text.at(False{}, tail ++ "\n" ++ b, _u => Snap.text(tail ++ "\n" ++ b)),
+    Answer.text.at(Char.is_eq(ch, '\n'), tail ++ "\n" ++ b, _u => Answer.text(tail ++ "\n" ++ b)),
+    Answer.text.at(False{}, tail ++ "\n" ++ b, _u => Answer.text(tail ++ "\n" ++ b)),
     b,
     Equal.cong(Bool, String,
-      nl => Answer.text.at(nl, tail ++ "\n" ++ b, _u => Snap.text(tail ++ "\n" ++ b)),
+      nl => Answer.text.at(nl, tail ++ "\n" ++ b, _u => Answer.text(tail ++ "\n" ++ b)),
       Char.is_eq(ch, '\n'), False{}, not_nl(ch, tail, h)),
     ih(clear_tail(ch, tail, h)))
 
@@ -83,7 +82,7 @@ def Laws.text_reads_body(s, b, h):
 
 def Laws.ok_reads_zero(s, b, h):
   Equal.cong(String, Bool, x => String.eq(x, "0"),
-    Snap.code(s ++ "\n" ++ b), s, Laws.code_reads_status(s, b, h))
+    Answer.code(s ++ "\n" ++ b), s, Laws.code_reads_status(s, b, h))
 
 # `free_of` is `clear`: the same walk, by induction on the string
 def free_of_is_clear(
@@ -405,22 +404,22 @@ def answers_codes.at(
   match bodies:
     case []:
       Equal.trans(List<&2, String>,
-        Snap.code(Par.par.of(code, None{})) <> Laws.codes(Par.par.answers(ct, [])),
+        Answer.code(Par.par.of(code, None{})) <> Laws.codes(Par.par.answers(ct, [])),
         code <> Laws.codes(Par.par.answers(ct, [])),
         code <> ct,
         Equal.cong(String, List<&2, String>, x => x <> Laws.codes(Par.par.answers(ct, [])),
-          Snap.code(Par.par.of(code, None{})), code,
+          Answer.code(Par.par.of(code, None{})), code,
           Laws.code_reads_status(code, "", Str.and.left(Str.clear(code, '\n'), Str.clear.all(ct, '\n'), h))),
         Equal.cong(List<&2, String>, List<&2, String>, y => code <> y,
           Laws.codes(Par.par.answers(ct, [])), ct,
           ih([], Str.and.right(Str.clear(code, '\n'), Str.clear.all(ct, '\n'), h))))
     case +body <> +bt:
       Equal.trans(List<&2, String>,
-        Snap.code(Par.par.of(code, body)) <> Laws.codes(Par.par.answers(ct, bt)),
+        Answer.code(Par.par.of(code, body)) <> Laws.codes(Par.par.answers(ct, bt)),
         code <> Laws.codes(Par.par.answers(ct, bt)),
         code <> ct,
         Equal.cong(String, List<&2, String>, x => x <> Laws.codes(Par.par.answers(ct, bt)),
-          Snap.code(Par.par.of(code, body)), code,
+          Answer.code(Par.par.of(code, body)), code,
           Laws.code_reads_status(code, File.file.text_of(body),
             Str.and.left(Str.clear(code, '\n'), Str.clear.all(ct, '\n'), h))),
         Equal.cong(List<&2, String>, List<&2, String>, y => code <> y,
@@ -445,22 +444,22 @@ def answers_texts.at(
   match bodies:
     case []:
       Equal.trans(List<&2, String>,
-        Snap.text(Par.par.of(code, None{})) <> Laws.texts(Par.par.answers(ct, [])),
+        Answer.text(Par.par.of(code, None{})) <> Laws.texts(Par.par.answers(ct, [])),
         "" <> Laws.texts(Par.par.answers(ct, [])),
         "" <> Laws.bodies.owed(ct, []),
         Equal.cong(String, List<&2, String>, x => x <> Laws.texts(Par.par.answers(ct, [])),
-          Snap.text(Par.par.of(code, None{})), "",
+          Answer.text(Par.par.of(code, None{})), "",
           Laws.text_reads_body(code, "", Str.and.left(Str.clear(code, '\n'), Str.clear.all(ct, '\n'), h))),
         Equal.cong(List<&2, String>, List<&2, String>, y => "" <> y,
           Laws.texts(Par.par.answers(ct, [])), Laws.bodies.owed(ct, []),
           ih([], Str.and.right(Str.clear(code, '\n'), Str.clear.all(ct, '\n'), h))))
     case +body <> +bt:
       Equal.trans(List<&2, String>,
-        Snap.text(Par.par.of(code, body)) <> Laws.texts(Par.par.answers(ct, bt)),
+        Answer.text(Par.par.of(code, body)) <> Laws.texts(Par.par.answers(ct, bt)),
         File.file.text_of(body) <> Laws.texts(Par.par.answers(ct, bt)),
         File.file.text_of(body) <> Laws.bodies.owed(ct, bt),
         Equal.cong(String, List<&2, String>, x => x <> Laws.texts(Par.par.answers(ct, bt)),
-          Snap.text(Par.par.of(code, body)), File.file.text_of(body),
+          Answer.text(Par.par.of(code, body)), File.file.text_of(body),
           Laws.text_reads_body(code, File.file.text_of(body),
             Str.and.left(Str.clear(code, '\n'), Str.clear.all(ct, '\n'), h))),
         Equal.cong(List<&2, String>, List<&2, String>, y => File.file.text_of(body) <> y,

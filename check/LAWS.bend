@@ -141,13 +141,19 @@ law char_eq_true:
   for e: {Char.is_eq(a, b) == True{} : Bool}
   {a == b : Char}
 
+# a string comparison read as a bit: whether it answered equal. It is what
+# `String.eq` reads off `String.cmp`, since Base 2.0.33 dropped its own
+# `String.eq.fin` for `Cmp.is_eq(String.order(a, b))`.
+def eq.of(rr: (String & String) & Cmp) -> Bool:
+  Cmp.is_eq(Pair.snd(String & String, Cmp, rr))
+
 # LAW: a string comparison read as a bit reads only the comparison, so the
 # chars it rebuilt in front do not change it
 law eq_fin_rec:
   for h1: Char
   for h2: Char
   for r: (String & String) & Cmp
-  {String.eq.fin(String.cmp.rec(h1, h2, r)) == String.eq.fin(r) : Bool}
+  {eq.of(String.cmp.rec(h1, h2, r)) == eq.of(r) : Bool}
 
 # LAW: two strings that read as equal, whose heads compared as the given
 # answer, have one head. The answer is a parameter so that the arms it did not
@@ -159,7 +165,7 @@ law eq_head.cmp:
   for t2: String
   for c: Cmp
   for ec: {U32.cmp(x, y) == c : Cmp}
-  for e: {String.eq.fin(String.cmp.fin(t1, t2, ((Chr{x}, Chr{y}), c)))
+  for e: {eq.of(String.cmp.fin(t1, t2, ((Chr{x}, Chr{y}), c)))
     == True{} : Bool}
   {Chr{x} == Chr{y} : Char}
 
@@ -171,7 +177,7 @@ law eq_tail.cmp:
   for +t2: String
   for c: Cmp
   for ec: {U32.cmp(x, y) == c : Cmp}
-  for e: {String.eq.fin(String.cmp.fin(t1, t2, ((Chr{x}, Chr{y}), c)))
+  for e: {eq.of(String.cmp.fin(t1, t2, ((Chr{x}, Chr{y}), c)))
     == True{} : Bool}
   {String.eq(t1, t2) == True{} : Bool}
 

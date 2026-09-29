@@ -60,7 +60,7 @@ def Laws.string_cmp_self(s):
 
 # equality is the comparison read as a bit, so the comparison's law answers
 def Laws.string_eq_self(s):
-  Equal.cong((String & String) & Cmp, Bool, r => String.eq.fin(r),
+  Equal.cong((String & String) & Cmp, Bool, r => Laws.eq.of(r),
     String.cmp(s, s), ((s, s), EQ{}), Laws.string_cmp_self(s))
 
 # and the same for a char
@@ -281,10 +281,10 @@ def Laws.eq_tail.cmp(x, y, t1, t2, c, _ec, e):
     case EQ{}:
       Equal.trans(Bool,
         String.eq(t1, t2),
-        String.eq.fin(String.cmp.rec(Chr{x}, Chr{y}, String.cmp(t1, t2))),
+        Laws.eq.of(String.cmp.rec(Chr{x}, Chr{y}, String.cmp(t1, t2))),
         True{},
         Equal.sym(Bool,
-          String.eq.fin(String.cmp.rec(Chr{x}, Chr{y}, String.cmp(t1, t2))),
+          Laws.eq.of(String.cmp.rec(Chr{x}, Chr{y}, String.cmp(t1, t2))),
           String.eq(t1, t2),
           Laws.eq_fin_rec(Chr{x}, Chr{y}, String.cmp(t1, t2))),
         e)

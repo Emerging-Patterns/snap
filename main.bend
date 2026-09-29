@@ -47,22 +47,22 @@ def par(  # noqa: L001 IO entry point
     return Par.par.answers(cs, bodies)
 
 # the exit status an answer holds: everything before its first newline
-def code(out: String) -> String:
+def code(out: String) -> String:  # noqa: L001 src/answer.bend's law holds it (SNAP-TRUST-5)
   Answer.code(out)
 
 # what the program printed, stdout and stderr together: everything after the
 # answer's first newline
-def text(out: String) -> String:
+def text(out: String) -> String:  # noqa: L001 src/answer.bend's law holds it (SNAP-TRUST-5)
   Answer.text(out)
 
 # whether an answer's status is 0
-def ok(+out: String) -> Bool:
+def ok(+out: String) -> Bool:  # noqa: L001 src/answer.bend's law holds it (SNAP-TRUST-5)
   Answer.ok(out)
 
 # the arguments joined on newlines, the wire ez's `pass` effect reads
-def cmd(argv: List<&2, String>) -> String:
+def cmd(argv: List<&2, String>) -> String:  # noqa: L001 src/argv.bend's law holds it (SNAP-TRUST-5)
   Argv.cmd(argv)
 
 # the arguments joined on newlines; the same as `cmd`
-def line(argv: List<&2, String>) -> String:
+def line(argv: List<&2, String>) -> String:  # noqa: L001 src/argv.bend's law holds it (SNAP-TRUST-5)
   Argv.line(argv)
