@@ -8,19 +8,16 @@
     url = "github:bendlang/bend/777ee0b55c485afdd7e68bd917b3d23a88d77371";
     inputs.nixpkgs.follows = "nixpkgs";
   };
-  # ez and its bolt stay on the bend ez's own flake.lock records until ez
-  # releases on 2.0.34, so ez's inputs.bend is pinned, not followed. The
-  # package's own builds and its proofs (checks.proofs) run on 2.0.34.
+  # ez 1.3.0 runs on 2.0.34, so ez (and the bolt it builds) follows this bend
   inputs.ez = {
     url = "github:Emerging-Patterns/ez";
     inputs.nixpkgs.follows = "nixpkgs";
-    inputs.bend.url = "github:bendlang/bend/af569d4826913b2ce3557e9829ccad31fcf86f94";
+    inputs.bend.follows = "bend";
   };
 
   outputs = { self, nixpkgs, ... }@inputs:
     let
       system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
       ez = inputs.ez.lib.${system};
       ezBin = inputs.ez.packages.${system}.default;
       bend = inputs.bend.packages.${system}.default;
@@ -38,21 +35,8 @@
       apps.${system}.default = { type = "app"; program = "${demo}/bin/demo"; };
       checks.${system} = {
         inherit demo;
-        # every PROOF.bend on this flake's bend: its first line must be
-        # ALL PROOFS CHECK. ez.mkProofs comes back when ez runs on 2.0.34.
-        proofs = pkgs.runCommand "snap-proofs" {
-          nativeBuildInputs = [ bend ];
-          BEND_LIB = ez.bendLib ./ez.lock.toml;
-        } ''
-          export HOME=$TMPDIR
-          cp -r ${self} src && chmod -R u+w src && cd src
-          for p in $(find . -name PROOF.bend -not -path './.ez/*' | sort); do
-            first=$(cd "$(dirname "$p")" && bend "$(basename "$p")" | head -n 1)
-            echo "$p: $first"
-            [ "$first" = "ALL PROOFS CHECK" ] || exit 1
-          done
-          touch $out
-        '';
+        # every PROOF.bend must print ALL PROOFS CHECK (ez prove)
+        proofs = ez.mkProofs { ez = ezBin; src = self; };
         lint = ez.mkLint { src = self; };
       };
       devShells.${system}.default = ez.mkShell {
