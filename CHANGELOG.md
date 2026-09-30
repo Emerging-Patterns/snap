@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/Emerging-Patterns/snap/compare/v1.1.0...v1.2.0) (2026-09-30)
+
+
+### Bug Fixes
+
+* fuels from their inputs; bolt v1.12.0 ([#28](https://github.com/Emerging-Patterns/snap/issues/28)) ([bc0e317](https://github.com/Emerging-Patterns/snap/commit/bc0e3172c2fb65c8c20000cc1120c742b0b2ca0f)), closes [#24](https://github.com/Emerging-Patterns/snap/issues/24)
+
 ## [1.1.0](https://github.com/Emerging-Patterns/snap/compare/v1.0.0...v1.1.0) (2026-09-25)
 
 
