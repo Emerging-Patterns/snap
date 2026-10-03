@@ -21,7 +21,7 @@ in [docs/rfc/snap-spec.md](docs/rfc/snap-spec.md).
 With [Bend](https://github.com/bendlang/bend) alone there is nothing to
 install: import snap by its hub name and version, and `bend` fetches it from
 [the hub](https://hub.bend-lang.com) into `~/.bend/lib` on the first run; no
-install step. snap is built and checked on Bend 2.0.34.
+install step. snap is built and checked on Bend 2.0.35.
 
 ```
 import snap@1.1.0.0/main.bend as Snap
