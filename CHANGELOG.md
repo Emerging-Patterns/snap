@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/Emerging-Patterns/snap/compare/v1.2.0...v1.3.0) (2026-10-23)
+
+
+### Bug Fixes
+
+* port to bend 2.0.38 ([#32](https://github.com/Emerging-Patterns/snap/issues/32)) ([65b7024](https://github.com/Emerging-Patterns/snap/commit/65b702404c7bd72cd1c323c1b356131ba47674cc))
+
 ## [1.2.0](https://github.com/Emerging-Patterns/snap/compare/v1.1.0...v1.2.0) (2026-09-30)
 
 
