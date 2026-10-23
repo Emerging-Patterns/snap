@@ -141,11 +141,31 @@ law char_eq_true:
   for e: {Char.is_eq(a, b) == True{} : Bool}
   {a == b : Char}
 
-# a string comparison read as a bit: whether it answered equal. It is what
-# `String.eq` reads off `String.cmp`, since Base 2.0.33 dropped its own
-# `String.eq.fin` for `Cmp.is_eq(String.order(a, b))`.
+# a string comparison read as a bit: whether it answered equal. Since Base
+# 2.0.38, `String.eq` is `Cmp.is_eq(String.order(a, b))`, a walk of its own
+# (`String.order.go`) that no longer goes through `String.cmp`; `eq_of_cmp`
+# below shows the two read the same.
 def eq.of(rr: (String & String) & Cmp) -> Bool:
   Cmp.is_eq(Pair.snd(String & String, Cmp, rr))
+
+# LAW: once the walk has found a first char that is less, the rest of the
+# strings does not change the order
+law order_go_lt:
+  for +a: String
+  for +b: String
+  {String.order.go(a, b, LT{}) == LT{} : Cmp}
+
+# LAW: nor once it has found one that is greater
+law order_go_gt:
+  for +a: String
+  for +b: String
+  {String.order.go(a, b, GT{}) == GT{} : Cmp}
+
+# LAW: a string comparison read as a bit is string equality
+law eq_of_cmp:
+  for +a: String
+  for +b: String
+  {eq.of(String.cmp(a, b)) == String.eq(a, b) : Bool}
 
 # LAW: a string comparison read as a bit reads only the comparison, so the
 # chars it rebuilt in front do not change it

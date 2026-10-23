@@ -58,11 +58,6 @@ def Laws.string_cmp_self(s):
           r => String.cmp.rec(h, h, r), String.cmp(t, t), ((t, t), EQ{}),
           Laws.string_cmp_self(t)))
 
-# equality is the comparison read as a bit, so the comparison's law answers
-def Laws.string_eq_self(s):
-  Equal.cong((String & String) & Cmp, Bool, r => Laws.eq.of(r),
-    String.cmp(s, s), ((s, s), EQ{}), Laws.string_cmp_self(s))
-
 # and the same for a char
 def Laws.char_eq_self(c):
   match c:
@@ -139,11 +134,11 @@ def Laws.starts_append(a, b):
       Laws.starts_nil(b)
     case SCon{+h, +t}:
       Equal.trans(Bool,
-        String.starts_with.if(String.append(t, b), t, Char.is_eq(h, h)),
-        String.starts_with.if(String.append(t, b), t, True{}),
+        String.starts_with.go.if(t, String.append(t, b), Char.is_eq(h, h)),
+        String.starts_with.go.if(t, String.append(t, b), True{}),
         True{},
         Equal.cong(Bool, Bool,
-          x => String.starts_with.if(String.append(t, b), t, x),
+          x => String.starts_with.go.if(t, String.append(t, b), x),
           Char.is_eq(h, h), True{}, Laws.char_eq_self(h)),
         Laws.starts_append(t, b))
 
@@ -264,6 +259,71 @@ def Laws.eq_fin_rec(_h1, _h2, r):
         case (t1, t2):
           {==}
 
+# the walk passes an order it has found to the end, whatever is left
+def Laws.order_go_lt(a, b):
+  match a b:
+    case SNil{} SNil{}:
+      {==}
+    case SNil{} SCon{h, t}:
+      {==}
+    case SCon{Chr{x}, t} SNil{}:
+      {==}
+    case SCon{Chr{x}, t1} SCon{Chr{y}, t2}:
+      {==}
+
+def Laws.order_go_gt(a, b):
+  match a b:
+    case SNil{} SNil{}:
+      {==}
+    case SNil{} SCon{h, t}:
+      {==}
+    case SCon{Chr{x}, t} SNil{}:
+      {==}
+    case SCon{Chr{x}, t1} SCon{Chr{y}, t2}:
+      {==}
+
+# two first chars, whose comparison is given as a parameter so each arm can
+# be read: equal heads leave both sides on the tails, where the tails' law
+# `ih` answers, and unequal heads leave both sides False
+def eq_of_cmp.step(
+  x: U32,
+  y: U32,
+  t1: String,
+  t2: String,
+  c: Cmp,
+  ih: {Laws.eq.of(String.cmp(t1, t2)) == String.eq(t1, t2) : Bool}
+) -> {Laws.eq.of(String.cmp.fin(t1, t2, ((Chr{x}, Chr{y}), c)))
+  == Cmp.is_eq(String.order.go(t1, t2, c)) : Bool}:
+  match c:
+    case LT{}:
+      Equal.sym(Bool, Cmp.is_eq(String.order.go(t1, t2, LT{})), False{},
+        Equal.cong(Cmp, Bool, k => Cmp.is_eq(k), String.order.go(t1, t2, LT{}),
+          LT{}, Laws.order_go_lt(t1, t2)))
+    case EQ{}:
+      Equal.trans(Bool,
+        Laws.eq.of(String.cmp.rec(Chr{x}, Chr{y}, String.cmp(t1, t2))),
+        Laws.eq.of(String.cmp(t1, t2)),
+        String.eq(t1, t2),
+        Laws.eq_fin_rec(Chr{x}, Chr{y}, String.cmp(t1, t2)),
+        ih)
+    case GT{}:
+      Equal.sym(Bool, Cmp.is_eq(String.order.go(t1, t2, GT{})), False{},
+        Equal.cong(Cmp, Bool, k => Cmp.is_eq(k), String.order.go(t1, t2, GT{}),
+          GT{}, Laws.order_go_gt(t1, t2)))
+
+# by induction on both strings: String.cmp and String.order.go walk the same
+# chars and stop at the same first difference
+def Laws.eq_of_cmp(a, b):
+  match a b:
+    case SNil{} SNil{}:
+      {==}
+    case SNil{} SCon{h, t}:
+      {==}
+    case SCon{Chr{x}, t} SNil{}:
+      {==}
+    case SCon{Chr{+x}, t1} SCon{Chr{+y}, t2}:
+      eq_of_cmp.step(x, y, t1, t2, U32.cmp(x, y), Laws.eq_of_cmp(t1, t2))
+
 def Laws.eq_head.cmp(x, y, _t1, _t2, c, ec, e):
   match c:
     case LT{}:
@@ -283,25 +343,51 @@ def Laws.eq_tail.cmp(x, y, t1, t2, c, _ec, e):
         String.eq(t1, t2),
         Laws.eq.of(String.cmp.rec(Chr{x}, Chr{y}, String.cmp(t1, t2))),
         True{},
-        Equal.sym(Bool,
-          Laws.eq.of(String.cmp.rec(Chr{x}, Chr{y}, String.cmp(t1, t2))),
+        Equal.trans(Bool,
           String.eq(t1, t2),
-          Laws.eq_fin_rec(Chr{x}, Chr{y}, String.cmp(t1, t2))),
+          Laws.eq.of(String.cmp(t1, t2)),
+          Laws.eq.of(String.cmp.rec(Chr{x}, Chr{y}, String.cmp(t1, t2))),
+          Equal.sym(Bool, Laws.eq.of(String.cmp(t1, t2)), String.eq(t1, t2),
+            Laws.eq_of_cmp(t1, t2)),
+          Equal.sym(Bool,
+            Laws.eq.of(String.cmp.rec(Chr{x}, Chr{y}, String.cmp(t1, t2))),
+            Laws.eq.of(String.cmp(t1, t2)),
+            Laws.eq_fin_rec(Chr{x}, Chr{y}, String.cmp(t1, t2)))),
         e)
     case GT{}:
       bit.absurd(&2, {String.eq(t1, t2) == True{} : Bool}, e)
+
+# equality reads as the comparison read as a bit (`eq_of_cmp`), so the
+# comparison's law answers
+def Laws.string_eq_self(s):
+  Equal.trans(Bool, String.eq(s, s), Laws.eq.of(String.cmp(s, s)), True{},
+    Equal.sym(Bool, Laws.eq.of(String.cmp(s, s)), String.eq(s, s),
+      Laws.eq_of_cmp(s, s)),
+    Equal.cong((String & String) & Cmp, Bool, r => Laws.eq.of(r),
+      String.cmp(s, s), ((s, s), EQ{}), Laws.string_cmp_self(s)))
+
+# a string equality that answered True, read as the comparison that did
+def eq.as_cmp(
+  a: String,
+  b: String,
+  e: {String.eq(a, b) == True{} : Bool}
+) -> {Laws.eq.of(String.cmp(a, b)) == True{} : Bool}:
+  Equal.trans(Bool, Laws.eq.of(String.cmp(a, b)), String.eq(a, b), True{},
+    Laws.eq_of_cmp(a, b), e)
 
 # the heads' comparison is the answer the first arm is given
 def Laws.eq_head(h1, h2, t1, t2, e):
   match h1 h2:
     case Chr{+x} Chr{+y}:
-      Laws.eq_head.cmp(x, y, t1, t2, U32.cmp(x, y), {==}, e)
+      Laws.eq_head.cmp(x, y, t1, t2, U32.cmp(x, y), {==},
+        eq.as_cmp(SCon{Chr{x}, t1}, SCon{Chr{y}, t2}, e))
 
 # and the answer the second arm is given
 def Laws.eq_tail(h1, h2, t1, t2, e):
   match h1 h2:
     case Chr{+x} Chr{+y}:
-      Laws.eq_tail.cmp(x, y, t1, t2, U32.cmp(x, y), {==}, e)
+      Laws.eq_tail.cmp(x, y, t1, t2, U32.cmp(x, y), {==},
+        eq.as_cmp(SCon{Chr{x}, t1}, SCon{Chr{y}, t2}, e))
 
 # by induction on both strings: two of different lengths never read as
 # equal, and two with a first char each have one head and equal tails
@@ -311,8 +397,8 @@ def Laws.string_eq_true(a, b, e):
       {==}
     case SNil{} SCon{h, t}:
       bit.absurd(&2, {SNil{} == SCon{h, t} : String}, e)
-    case SCon{h, t} SNil{}:
-      bit.absurd(&2, {SCon{h, t} == SNil{} : String}, e)
+    case SCon{Chr{x}, t} SNil{}:
+      bit.absurd(&2, {SCon{Chr{x}, t} == SNil{} : String}, e)
     case SCon{+h1, +t1} SCon{+h2, +t2}:
       Equal.trans(String, SCon{h1, t1}, SCon{h2, t1}, SCon{h2, t2},
         Equal.cong(Char, String, h => SCon{h, t1}, h1, h2,
