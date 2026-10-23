@@ -24,12 +24,12 @@ install: import snap by its hub name and version, and `bend` fetches it from
 install step. snap is built and checked on Bend 2.0.38.
 
 ```
-import snap@1.1.0.0/main.bend as Snap
+import snap@1.3.0.0/main.bend as Snap
 ```
 
-`snap@1.1.0.0` is snap v1.1.0 and resolves to
-`0xabe575924687afad4cee1a2c1194d639`; to pin by content, import
-`0xabe575924687afad4cee1a2c1194d639/main.bend` instead.
+`snap@1.3.0.0` is snap v1.3.0 and resolves to
+`0xead4c7939c9eaca8d47da53b4496b731`; to pin by content, import
+`0xead4c7939c9eaca8d47da53b4496b731/main.bend` instead.
 
 Or with [ez](https://github.com/Emerging-Patterns/ez), which records the
 package in `ez.toml` (`ez init` makes one):
@@ -44,7 +44,7 @@ ez add Emerging-Patterns/snap
 stderr together. `Snap.code` reads the status; `Snap.text` reads the body.
 
 ```
-import snap@1.1.0.0/main.bend as Snap
+import snap@1.3.0.0/main.bend as Snap
 
 def main() -> IO(Unit):
   do IO<Unit>:
