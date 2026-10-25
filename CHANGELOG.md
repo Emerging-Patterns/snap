@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/Emerging-Patterns/snap/compare/v1.4.0...v1.5.0) (2026-10-25)
+
+
+### Features
+
+* **nix:** build and check on x86_64-linux, aarch64-linux and aarch64-darwin ([#41](https://github.com/Emerging-Patterns/snap/issues/41)) ([0f68334](https://github.com/Emerging-Patterns/snap/commit/0f68334b0a60e423720a563527e30c4d3268099b))
+
 ## [1.4.0](https://github.com/Emerging-Patterns/snap/compare/v1.3.0...v1.4.0) (2026-10-25)
 
 
