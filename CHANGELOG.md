@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/Emerging-Patterns/snap/compare/v1.3.0...v1.4.0) (2026-10-25)
+
+
+### Bug Fixes
+
+* **par:** build on macOS ([#39](https://github.com/Emerging-Patterns/snap/issues/39)) ([ce45e94](https://github.com/Emerging-Patterns/snap/commit/ce45e940d002abe8778876b90813ca158a9445bf))
+
 ## [1.3.0](https://github.com/Emerging-Patterns/snap/compare/v1.2.0...v1.3.0) (2026-10-23)
 
 
