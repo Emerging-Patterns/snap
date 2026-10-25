@@ -36,13 +36,19 @@
 // Spare means MemAvailable, which is the kernel's own estimate of what a new
 // job could get, page cache it would reclaim included. `sysinfo` has no field
 // for it: its freeram plus bufferram omit Cached, so the width would be too
-// small. sysinfo is still the fallback for a system with no /proc.
+// small. sysinfo is still the fallback for a Linux with no /proc. macOS has
+// neither, and there spare is the free, inactive and purgeable pages Mach
+// counts, the ones a new job could be given without paging anything out.
 #include <errno.h>
 #include <signal.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+#if defined(__linux__)
 #include <sys/sysinfo.h>
+#elif defined(__APPLE__)
+#include <mach/mach.h>
+#endif
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
@@ -62,12 +68,23 @@ static double snaprun_par_spare(void) {
     }
     fclose(f);
   }
+#if defined(__linux__)
   struct sysinfo si;
   if (sysinfo(&si) == 0) {
     double unit = si.mem_unit ? (double)si.mem_unit : 1.0;
     return (((double)si.freeram + (double)si.bufferram) * unit) /
       (1024.0 * 1024.0 * 1024.0);
   }
+#elif defined(__APPLE__)
+  vm_statistics64_data_t vm;
+  mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+  if (host_statistics64(mach_host_self(), HOST_VM_INFO64,
+                        (host_info64_t)&vm, &count) == KERN_SUCCESS) {
+    double pages = (double)vm.free_count + (double)vm.inactive_count +
+      (double)vm.purgeable_count;
+    return (pages * (double)vm_page_size) / (1024.0 * 1024.0 * 1024.0);
+  }
+#endif
   return 0.0;
 }
 
