@@ -144,7 +144,7 @@ These laws have real content: `code` and `text` never see the effect, so the law
 | SNAP-PAR-1 | For every job list and every header whose fields hold no NUL, `plan.split(par.plan(js, width, gb, at, by))` is exactly the header and one job per job of `js`, in order, each the job's argv when it `accepts` and the empty job otherwise. | Proved | pending | fails (depends on REVIEW-2, REVIEW-3) | an empty job, or a newline in an argument, drops every later job |
 | SNAP-PAR-2 | For every list of statuses and every list of bodies, `par.answers` has exactly one answer per status, and the answer at position `n` is status `n`, a newline, then body `n`, or the empty string when there is no body `n`. | Proved | pending | partly | `par.read` pairs by position inside IO today |
 | SNAP-PAR-3 | On both lanes, `snaprun.par` answers exactly one status per job of its wire, in order, each as `snaprun.exec` would for that job; 127 for the empty job; 124 for a job skipped because the deadline had passed or ended by it; and it writes each job's output to `at/n` and truncates `at/n` for every job it does not run. | Trusted | | partly (depends on REVIEW-4, REVIEW-6) | JS: 127 on timeout, crash on a missing `at`; both: stale file for a skipped job |
-| SNAP-PAR-4 | `snaprun.par` runs at most `width` jobs at once; an empty or zero width is the online cores, reduced to what the spare memory holds at `gb` each, and at least 1. | Trusted | | holds on native | `par.c:69-80`; JS runs one at a time |
+| SNAP-PAR-4 | `snaprun.par` runs at most `width` jobs at once; an empty or zero width is the online cores, reduced to what the spare memory holds at `gb` each, and at least 1. | Trusted | | holds on native | `par.c:76-97`; JS runs one at a time |
 
 SNAP-PAR-2 with SNAP-PAR-3 gives the property callers need, `par` answers once per job in order, with the effect's half named as an assumption and the assembly proved. SNAP-PAR-1's law is induction on the jobs with ARGV-1's lemma per job and one for the count.
 
@@ -267,13 +267,13 @@ This table is as read at `be520aa`. Since the rollout, every decision in it that
 | | the child's stdout and stderr | `exec.c:52-59`, `exec.js:8` | the body |
 | `start` | argv, `PATH` | `start.c:13-44`, `start.js:7-9` | what is started |
 | | the fork's result | `start.c:33`, `start.js:11` | the pid answered |
-| `par` | the header fields and jobs, through the wire | `par.c:94-143`, `par.js:11-23` | what runs, how many at once, where output goes, the deadline |
-| | the clock | `par.c:158`, `par.js:24` | whether a job is skipped, and its alarm |
-| | `/proc/meminfo`, `sysinfo`, online cores | `par.c:46-80` | the width when none is given |
-| | each child's status | `par.c:193-215` | the job's status |
+| `par` | the header fields and jobs, through the wire | `par.c:111-160`, `par.js:11-23` | what runs, how many at once, where output goes, the deadline |
+| | the clock | `par.c:175`, `par.js:24` | whether a job is skipped, and its alarm |
+| | `/proc/meminfo`, `sysinfo` or Mach's page counts, online cores | `par.c:52-97` | the width when none is given |
+| | each child's status | `par.c:210-232` | the job's status |
 | | the files `at/0` … `at/n-1` | `main.bend:154-162` | each job's body, including files this run did not write |
 
-Places a failed or missing read becomes a default: a file that cannot be opened becomes an empty body (`file.read`, `main.bend:124`); a read error partway through a file ends it silently with what was read (`file.slurp.more`, `main.bend:88-94`); the slurp stops silently after 100000 chunks of 64 KiB (`main.bend:120`); `atoi` turns a malformed count into 0, which ends the job walk (`par.c:125`).
+Places a failed or missing read becomes a default: a file that cannot be opened becomes an empty body (`file.read`, `main.bend:124`); a read error partway through a file ends it silently with what was read (`file.slurp.more`, `main.bend:88-94`); the slurp stops silently after 100000 chunks of 64 KiB (`main.bend:120`); `atoi` turns a malformed count into 0, which ends the job walk (`par.c:142`).
 
 ### Findings
 
