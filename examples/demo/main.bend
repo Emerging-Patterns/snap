@@ -3,7 +3,7 @@ import Base
 import ../../main.bend as Snap
 
 # one run as `label code=... text=...`
-def show(+label: String, +out: String) -> IO(Unit):  # noqa: L001 demo output
+def show(+label: String, +out: String) -> IO(Unit):
   IO.print(label ++ " code=" ++ Snap.code(out) ++ " text=" ++ Snap.text(out))
 
 # every batch answer, labeled `par<n>` by its place in the order
@@ -20,7 +20,7 @@ def show.par(rs: List<&2, String>, +nn: Nat) -> IO(Unit):
 def dir.of(+out: String) -> String:
   String.trim(Snap.text(out))
 
-def main() -> IO(Unit):  # noqa: L001 demo entry point
+def main() -> IO(Unit):
   do IO<Unit>:
     +hi : String <- Snap.run(["echo", "hello"])
     show("run", hi)

@@ -46,23 +46,32 @@ def par(  # noqa: L001 IO entry point
     bodies : List<&2, Maybe<&2, String>> <- Par.par.bodies(cs, at, 0n)
     return Par.par.answers(cs, bodies)
 
+# Trusted, not proved: `code`, `text` and `ok` below are src/answer.bend's,
+# and `cmd` and `line` are src/argv.bend's, each returned unchanged, so the
+# laws over those modules (laws/CodeReadsStatus.bend,
+# laws/TextReadsBody.bend, laws/OkMeansStatusZero.bend,
+# laws/CmdSplitsBackAtNewlines.bend and laws/LineSplitsBackAtNewlines.bend)
+# hold of the interface. Each is a one-line delegate reviewed by reading
+# this file; a proof cannot import main.bend, whose effects are foreign code
+# and fail bend's verdict for every file that imports it.
+
 # the exit status an answer holds: everything before its first newline
-def code(out: String) -> String:  # noqa: L001 src/answer.bend's law holds it (SNAP-TRUST-5)
+def code(out: String) -> String:  # noqa: L001 laws/CodeReadsStatus.bend holds it (trusted above)
   Answer.code(out)
 
 # what the program printed, stdout and stderr together: everything after the
 # answer's first newline
-def text(out: String) -> String:  # noqa: L001 src/answer.bend's law holds it (SNAP-TRUST-5)
+def text(out: String) -> String:  # noqa: L001 laws/TextReadsBody.bend holds it (trusted above)
   Answer.text(out)
 
 # whether an answer's status is 0
-def ok(+out: String) -> Bool:  # noqa: L001 src/answer.bend's law holds it (SNAP-TRUST-5)
+def ok(+out: String) -> Bool:  # noqa: L001 laws/OkMeansStatusZero.bend holds it (trusted above)
   Answer.ok(out)
 
 # the arguments joined on newlines, the wire ez's `pass` effect reads
-def cmd(argv: List<&2, String>) -> String:  # noqa: L001 src/argv.bend's law holds it (SNAP-TRUST-5)
+def cmd(argv: List<&2, String>) -> String:  # noqa: L001 laws/CmdSplitsBackAtNewlines.bend holds it (trusted above)
   Argv.cmd(argv)
 
 # the arguments joined on newlines; the same as `cmd`
-def line(argv: List<&2, String>) -> String:  # noqa: L001 src/argv.bend's law holds it (SNAP-TRUST-5)
+def line(argv: List<&2, String>) -> String:  # noqa: L001 laws/LineSplitsBackAtNewlines.bend holds it (trusted above)
   Argv.line(argv)
