@@ -10,11 +10,13 @@ could not arrive whole, one with no program name or with NUL inside an
 argument, is refused: `run` answers status 127 and `start` answers 0, and
 nothing is run. In `par`, a refused job answers 127 in its own place.
 
-What snap guarantees is listed in [SPEC.md](SPEC.md): each requirement is
-either proved by a quantified law in `LAWS.bend` (proofs in
-`PROOF.bend`, shared lemmas in `check/`) or named as a trusted
-assumption about the C and JS effects that start programs. The reasoning is
-in [docs/rfc/snap-spec.md](docs/rfc/snap-spec.md).
+What snap guarantees is listed in [LAWS.bend](LAWS.bend): one file under
+[laws/](laws/) each, proved by the file of the same name under
+[proofs/](proofs/) and checked by `bend PROOF.bend` (the first line must be
+`ALL PROOFS CHECK`). What snap trusts rather than proves, most of all the C
+and JS effects that start programs, is said on the code that assumes it, in
+`src/effect.bend` and `main.bend`. The reasoning is in
+[docs/rfc/snap-spec.md](docs/rfc/snap-spec.md).
 
 ## Install
 

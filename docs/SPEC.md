@@ -2,7 +2,7 @@
 
 This is the list of every behavior snap guarantees, each under a stable requirement ID. Every requirement has one of two levels. A **Proved** requirement holds for every input, and is backed by a quantified law in a LAWS.bend that passes the proof gate. A **Trusted** requirement is an assumption about something snap cannot check from inside its own gate, most of all the three foreign effects that start programs, and it is listed in the trust boundary below. A Proved requirement whose law has not landed yet has status **pending**: we intend to prove it, and until then it is not guaranteed. The proof gate is this check: for every PROOF.bend in the tree, the first line `bend PROOF.bend` prints is exactly `ALL PROOFS CHECK`. CI runs it in the `proofs` flake check and in the `readme` job. The gate is the PROOF.bend files, not the entry: bend's verdict fails any file whose imports hold foreign code, so `bend main.bend --check-only` prints `SOME PROOFS FAIL`, naming the effects and the defs that call them, and that is expected. For the same reason no LAWS.bend imports main.bend: the answer laws are stated over `src/answer.bend` and the `cmd` and `line` laws over `src/argv.bend`, whose defs main.bend's `code`, `text`, `ok`, `cmd` and `line` return unchanged (SNAP-TRUST-5).
 
-The reasoning behind each requirement, and the decisions that shaped them, are in [docs/rfc/snap-spec.md](docs/rfc/snap-spec.md). What snap proved before this list existed, and what we found, is in that RFC's "Audit record".
+The reasoning behind each requirement, and the decisions that shaped them, are in [docs/rfc/snap-spec.md](rfc/snap-spec.md). What snap proved before this list existed, and what we found, is in that RFC's "Audit record".
 
 ## Tagging
 
