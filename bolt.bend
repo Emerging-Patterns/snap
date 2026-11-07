@@ -14,8 +14,7 @@ def suspicious() -> String:
 def style() -> String:
   "error"
 
-# the law rules: `coverage` (a def no quantified law reaches), `closed` and
-# `unsafe`. IO a law cannot reach is marked `# noqa: L001`.
+# the law rules: `coverage` (a def no quantified law reaches) and `closed`.
 def laws() -> String:
   "error"
 
@@ -23,6 +22,12 @@ def laws() -> String:
 def closed() -> String:
   "error"
 
-# an `@unsafe` def that a LAWS.bend or PROOF.bend reaches
-def unsafe() -> String:
+# a def no quantified law reaches (L001); off since bolt 1.26 unless named
+def coverage() -> String:
   "error"
+
+# a list appended to through a continuation (U004). warn, not error: bolt
+# 1.24 widened it and it fires on src/file.bend (listed in the PR that
+# set this); back to error once that loop prepends
+def concat() -> String:
+  "warn"
