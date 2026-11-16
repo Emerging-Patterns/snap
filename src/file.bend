@@ -1,26 +1,32 @@
 # src/file: a file's text, read whole, or None when it cannot be opened.
 import Base
 
-# the handle closed, and whatever was gathered
-def file.slurp.end(file: File, acc: String) -> IO(String):
+# the handle closed, and whatever was gathered: the chunks were prepended as
+# they came, so they are put back in order once, here
+def file.slurp.end(file: File, acc: List<&2, String>) -> IO(String):
   do IO<String>:
     File.close(file)
-    return acc
+    return String.concat(List.reverse(&2, String, acc))
 
 # an empty chunk means the end of the file
-def file.slurp.cut(chunk: String, file: File, acc: String, rest: File -> String -> IO(String)) -> IO(String):
+def file.slurp.cut(
+  chunk: String,
+  file: File,
+  acc: List<&2, String>,
+  rest: File -> List<&2, String> -> IO(String)
+) -> IO(String):
   match chunk:
     case SNil{}:
       file.slurp.end(file, acc)
     case SCon{c, t}:
-      rest(file, acc ++ SCon{c, t})
+      rest(file, SCon{c, t} <> acc)
 
 # a failed read ends the file as surely as an empty one
 def file.slurp.more(
   res: Result<&1, &1, U32 & String, String>,
   file: File,
-  acc: String,
-  rest: File -> String -> IO(String)
+  acc: List<&2, String>,
+  rest: File -> List<&2, String> -> IO(String)
 ) -> IO(String):
   match res:
     case Fail{_e}:
@@ -31,14 +37,14 @@ def file.slurp.more(
 # the handle comes back paired with what it read
 def file.slurp.next(
   got: File & Result<&1, &1, U32 & String, String>,
-  acc: String,
-  rest: File -> String -> IO(String)
+  acc: List<&2, String>,
+  rest: File -> List<&2, String> -> IO(String)
 ) -> IO(String):
   (file, res) = got
   file.slurp.more(res, file, acc, rest)
 
 # the whole file, read in chunks until one is empty, or the fuel is
-def file.slurp(fuel: Nat, file: File, acc: String) -> IO(String):
+def file.slurp(fuel: Nat, file: File, acc: List<&2, String>) -> IO(String):
   match fuel:
     case 0n:
       file.slurp.end(file, acc)
@@ -51,7 +57,7 @@ def file.slurp(fuel: Nat, file: File, acc: String) -> IO(String):
 # /proc file reports 0 bytes and a file past 4 GiB fails to report, so these
 # are read until they end, up to 100000 reads of 64 KiB
 def file.unsized() -> Nat:
-  U32.to_nat(100000)
+  100000n
 
 # a size of 0 is no size to go by; any other is read to
 def file.reads.given(none: Bool, bytes: U32) -> Nat:
@@ -77,7 +83,7 @@ def file.reads.of(res: Result<&1, &1, U32 & String, U32>) -> Nat:
 # a file read whole, with fuel enough for the size it reported
 def file.read.sized(got: File & Result<&1, &1, U32 & String, U32>) -> IO(String):
   (file, res) = got
-  file.slurp(file.reads.of(res), file, "")
+  file.slurp(file.reads.of(res), file, Nil{})
 
 # what an opened file holds, or nothing when it would not open
 def file.read.opened(res: Result<&1, &1, U32 & String, File>) -> IO(Maybe<&2, String>):

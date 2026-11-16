@@ -26,8 +26,6 @@ def closed() -> String:
 def coverage() -> String:
   "error"
 
-# a list appended to through a continuation (U004). warn, not error: bolt
-# 1.24 widened it and it fires on src/file.bend (listed in the PR that
-# set this); back to error once that loop prepends
+# a list appended to through a continuation (U004)
 def concat() -> String:
-  "warn"
+  "error"
