@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/Emerging-Patterns/snap/compare/v1.5.0...v1.6.0) (2026-11-16)
+
+
+### Bug Fixes
+
+* **lint:** clear bolt 1.65 findings (ez 1.16.0, bolt 1.65.0) ([7ea64df](https://github.com/Emerging-Patterns/snap/commit/7ea64df45567c3eb2ce8786e091f0a87828b3a82))
+
 ## [1.5.0](https://github.com/Emerging-Patterns/snap/compare/v1.4.0...v1.5.0) (2026-10-25)
 
 
