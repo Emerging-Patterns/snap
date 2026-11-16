@@ -25,7 +25,3 @@ def closed() -> String:
 # a def no quantified law reaches (L001); off since bolt 1.26 unless named
 def coverage() -> String:
   "error"
-
-# a list appended to through a continuation (U004)
-def concat() -> String:
-  "error"
